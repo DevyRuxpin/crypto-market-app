@@ -3,70 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Crypto Market{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {% block extra_head %}{% endblock %}
+    <title>Crypto Market - {% block title %}{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Chart.js (Updated to correct URL) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block head_extra %}{% endblock %}
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}" class="text-blue-600 font-bold text-xl">
-                            Crypto Market
-                        </a>
-                    </div>
-                </div>
-                <div class="flex items-center">
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Crypto Market</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
                     {% if current_user.is_authenticated %}
-                        <div class="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                            <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Dashboard</a>
-                        </div>
-                        <div class="ml-4 flex items-center md:ml-6">
-                            <div class="ml-3 relative">
-                                <div>
-                                    <button type="button" class="max-w-xs bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
-                                        <span class="sr-only">Open user menu</span>
-                                        <span class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <span class="text-blue-800 font-medium">{{ current_user.email[0].upper() }}</span>
-                                        </span>
-                                    </button>
-                                </div>
-                                <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" id="user-menu" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
-                                    <span class="block px-4 py-2 text-sm text-gray-700">{{ current_user.email }}</span>
-                                    <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1">Sign out</a>
-                                </div>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('login') }}" class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Login</a>
-                            <a href="{{ url_for('signup') }}" class="px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700">Sign up</a>
-                        </div>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
                     {% endif %}
-                </div>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+                    </li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Flash messages -->
+    <div class="container mt-3">
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="mb-6">
-                    {% for message in messages %}
-                        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-2" role="alert">
-                            <p>{{ message }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        {% if messages %}
+        <div class="alert alert-info">
+            <ul class="mb-0">
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         {% endwith %}
-        
+    </div>
+
+    <!-- Main content -->
+    <main class="container py-4">
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Footer -->
     <footer class="bg-white mt-12 py-6 border-t">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <p class="text-center text-gray-500 text-sm">
@@ -75,27 +82,11 @@
         </div>
     </footer>
 
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // User menu toggle
-            const userMenuButton = document.getElementById('user-menu-button');
-            const userMenu = document.getElementById('user-menu');
-            
-            if (userMenuButton && userMenu) {
-                userMenuButton.addEventListener('click', function() {
-                    userMenu.classList.toggle('hidden');
-                });
-                
-                // Close menu when clicking outside
-                document.addEventListener('click', function(event) {
-                    if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-                        userMenu.classList.add('hidden');
-                    }
-                });
-            }
-        });
-    </script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>
