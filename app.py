@@ -117,6 +117,8 @@ def crypto_detail(symbol):
 @login_required
 def get_prices():
     prices = BinanceService.get_ticker_prices()
+    # Add logging here
+    app.logger.info(f"API/prices returning {len(prices)} items")
     return jsonify(prices)
 
 @app.route('/api/crypto/<symbol>/klines')
