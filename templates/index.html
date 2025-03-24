@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="hero text-center">
+    <div class="container">
+        <h1>Welcome to Crypto Market</h1>
+        <p class="lead">Track cryptocurrency prices, analyze market trends, and make informed decisions with our real-time data platform.</p>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">Go to Dashboard</a>
+        {% else %}
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">Login</a>
+            <a href="{{ url_for('signup') }}" class="btn btn-outline-light btn-lg">Sign Up</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h2>Why Choose Crypto Market?</h2>
+            <p class="lead text-muted">Our platform provides everything you need to track the cryptocurrency market</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Real-Time Data</h3>
+                <p>Get access to real-time cryptocurrency prices and market data directly from major exchanges.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <h3>Advanced Charts</h3>
+                <p>Analyze price movements with interactive charts and technical indicators.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card feature-card h-100">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3>Mobile Friendly</h3>
+                <p>Access your dashboard from any device with our responsive design.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h2>Top Cryptocurrencies</h2>
+            <p class="text-muted">Quick overview of the market leaders</p>
+            <div id="top-cryptos" class="row mt-4">
+                <!-- Loading indicator for top cryptos -->
+                <div class="col-12 text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading top cryptocurrencies...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Fetch top cryptocurrencies for the homepage
+document.addEventListener('DOMContentLoaded', function() {
+    const topCryptosContainer = document.getElementById('top-cryptos');
+    
+    // Only fetch if the container exists (user is on homepage)
+    if (topCryptosContainer) {
+        fetch('/api/prices')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Filter to just show major coins
+                const majorCoins = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'SOLUSDT', 'DOGEUSDT', 'DOTUSDT'];
+                const topCoins = data.filter(coin => majorCoins.includes(coin.symbol)).slice(0, 6);
+                
+                if (topCoins.length === 0) {
+                    topCryptosContainer.innerHTML = '<div class="col-12 text-center">No data available</div>';
+                    return;
+                }
+                
+                // Build HTML for the coins
+                let html = '';
+                topCoins.forEach(coin => {
+                    const price = parseFloat(coin.price);
+                    let formattedPrice;
+                    
+                    if (price >= 1000) {
+                        formattedPrice = `$${price.toFixed(2)}`;
+                    } else if (price >= 1) {
+                        formattedPrice = `$${price.toFixed(4)}`;
+                    } else if (price >= 0.01) {
+                        formattedPrice = `$${price.toFixed(6)}`;
+                    } else {
+                        formattedPrice = `$${price.toFixed(8)}`;
+                    }
+                    
+                    // Extract base asset name from symbol (remove USDT, BTC, etc.)
+                    let baseName = coin.symbol;
+                    if (baseName.endsWith('USDT')) {
+                        baseName = baseName.replace('USDT', '');
+                    } else if (baseName.endsWith('BTC')) {
+                        baseName = baseName.replace('BTC', '');
+                    }
+                    
+                    html += `
+                        <div class="col-md-4 col-lg-2 mb-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">${baseName}</h5>
+                                    <p class="card-text">${formattedPrice}</p>
+                                    <a href="/crypto/${coin.symbol}" class="btn btn-sm btn-outline-primary">Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                topCryptosContainer.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error fetching top cryptos:', error);
+                topCryptosContainer.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-danger">
+                            Failed to load cryptocurrency data. Please try again later.
+                        </div>
+                    </div>
+                `;
+            });
+    }
+});
+</script>
+{% endblock %}
