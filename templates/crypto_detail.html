@@ -1,0 +1,639 @@
+{% extends "base.html" %}
+
+{% block title %}{{ symbol }} - Crypto Market{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('dashboard') }}" class="text-blue-600 hover:text-blue-800">
+        &larr; Back to Dashboard
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold" id="crypto-name">{{ symbol }}</h1>
+            <p class="text-gray-600" id="crypto-price">Loading price...</p>
+        </div>
+        <div>
+            <span class="text-lg font-semibold" id="price-change">Loading...</span>
+        </div>
+    </div>
+    
+    <div class="mb-6">
+        <div class="flex space-x-2 mb-4">
+            <button class="interval-btn bg-blue-600 text-white px-4 py-2 rounded" data-interval="1m">1m</button>
+            <button class="interval-btn bg-gray-200 text-gray-800 px-4 py-2 rounded" data-interval="5m">5m</button>
+            <button class="interval-btn bg-gray-200 text-gray-800 px-4 py-2 rounded" data-interval="15m">15m</button>
+            <button class="interval-btn bg-gray-200 text-gray-800 px-4 py-2 rounded" data-interval="1h">1h</button>
+            <button class="interval-btn bg-gray-200 text-gray-800 px-4 py-2 rounded" data-interval="4h">4h</button>
+            <button class="interval-btn bg-gray-200 text-gray-800 px-4 py-2 rounded" data-interval="1d">1d</button>
+        </div>
+        
+        <div class="w-full h-96 bg-gray-50 rounded-lg">
+            <canvas id="price-chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-blue-50 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700">RSI (14)</h3>
+            <p id="rsi-value" class="text-2xl font-bold">Loading...</p>
+            <div class="mt-2 text-sm text-gray-600">
+                <span>Overbought: >70</span> | <span>Oversold: <30</span>
+            </div>
+        </div>
+        
+        <div class="bg-green-50 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700">SMA 20</h3>
+            <p id="sma-20-value" class="text-2xl font-bold">Loading...</p>
+            <div id="sma-20-indicator" class="mt-2 text-sm"></div>
+        </div>
+        
+        <div class="bg-yellow-50 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700">SMA 50</h3>
+            <p id="sma-50-value" class="text-2xl font-bold">Loading...</p>
+            <div id="sma-50-indicator" class="mt-2 text-sm"></div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Price Statistics (24h)</h3>
+            <div id="price-stats" class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">High</span>
+                    <span id="high-24h" class="font-medium">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Low</span>
+                    <span id="low-24h" class="font-medium">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Volume</span>
+                    <span id="volume-24h" class="font-medium">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Volume Change</span>
+                    <span id="volume-change" class="font-medium">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Order Book</h3>
+            <div class="flex space-x-4">
+                <div class="w-1/2">
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">Bids (Buy)</h4>
+                    <div id="bid-list" class="space-y-1 text-sm max-h-40 overflow-y-auto">
+                        <div class="text-center py-2 text-gray-500">Loading...</div>
+                    </div>
+                </div>
+                <div class="w-1/2">
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">Asks (Sell)</h4>
+                    <div id="ask-list" class="space-y-1 text-sm max-h-40 overflow-y-auto">
+                        <div class="text-center py-2 text-gray-500">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-6 text-center text-gray-600">
+        <p>Data provided by Binance API</p>
+        <p class="mt-2">
+            <span id="connection-status" class="inline-block px-3 py-1 rounded-full bg-gray-200">
+                WebSocket: Connecting...
+            </span>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const symbol = '{{ symbol }}';
+    let priceChart = null;
+    let currentInterval = '1m';
+    let socket = null;
+    let lastPrice = 0;
+    let lastKlineTime = 0;
+    let klineData = [];
+    const connectionStatus = document.getElementById('connection-status');
+    
+    // Select all interval buttons
+    const intervalButtons = document.querySelectorAll('.interval-btn');
+    
+    // Add event listeners to interval buttons
+    intervalButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active button style
+            intervalButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-800');
+            });
+            button.classList.remove('bg-gray-200', 'text-gray-800');
+            button.classList.add('bg-blue-600', 'text-white');
+            
+            // Update chart with new interval
+            currentInterval = button.dataset.interval;
+            
+            // Stop previous stream if any
+            stopKlineStream();
+            
+            // Fetch new data and start new stream
+            fetchCryptoData(symbol, currentInterval);
+        });
+    });
+    
+    // Initialize Socket.IO connection
+    function initializeWebSocket() {
+        socket = io();
+        
+        socket.on('connect', function() {
+            connectionStatus.textContent = 'WebSocket: Connected';
+            connectionStatus.classList.remove('bg-gray-200', 'bg-red-200');
+            connectionStatus.classList.add('bg-green-200');
+            
+            // Subscribe to kline updates for this symbol
+            startKlineStream();
+        });
+        
+        socket.on('disconnect', function() {
+            connectionStatus.textContent = 'WebSocket: Disconnected';
+            connectionStatus.classList.remove('bg-green-200');
+            connectionStatus.classList.add('bg-red-200');
+        });
+        
+        // Listen for kline updates
+        socket.on(`kline_update_${symbol.toLowerCase()}_${currentInterval}`, function(data) {
+            if (data && data.k) {
+                const kline = data.k;
+                
+                // Update the last price
+                lastPrice = parseFloat(kline.c);
+                document.getElementById('crypto-price').textContent = `$${lastPrice.toFixed(lastPrice < 1 ? 6 : 2)}`;
+                
+                // Check if this is a new kline or an update to current kline
+                if (kline.t !== lastKlineTime) {
+                    // This is a new kline, add it to our dataset
+                    lastKlineTime = kline.t;
+                    
+                    // Add new kline data
+                    klineData.push({
+                        time: kline.t,
+                        open: parseFloat(kline.o),
+                        high: parseFloat(kline.h),
+                        low: parseFloat(kline.l),
+                        close: parseFloat(kline.c),
+                        volume: parseFloat(kline.v),
+                        close_time: kline.T
+                    });
+                    
+                    // Keep only the last 100 klines
+                    if (klineData.length > 100) {
+                        klineData.shift();
+                    }
+                    
+                    // Recalculate indicators
+                    updateIndicators();
+                } else {
+                    // Update the current kline
+                    const lastIndex = klineData.length - 1;
+                    if (lastIndex >= 0) {
+                        klineData[lastIndex] = {
+                            time: kline.t,
+                            open: parseFloat(kline.o),
+                            high: parseFloat(kline.h),
+                            low: parseFloat(kline.l),
+                            close: parseFloat(kline.c),
+                            volume: parseFloat(kline.v),
+                            close_time: kline.T
+                        };
+                    }
+                }
+                
+                // Update the chart
+                updateChart();
+            }
+        });
+    }
+    
+    // Start kline WebSocket stream
+    function startKlineStream() {
+        fetch(`/api/stream/start/${symbol}?interval=${currentInterval}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Started kline stream for ${symbol} with interval ${currentInterval}`);
+                    
+                    // Subscribe to this stream
+                    socket.emit('subscribe', { symbol: symbol, interval: currentInterval });
+                }
+            })
+            .catch(error => console.error('Error starting kline stream:', error));
+    }
+    
+    // Stop kline WebSocket stream
+    function stopKlineStream() {
+        fetch(`/api/stream/stop/${symbol}?interval=${currentInterval}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(`Stopped kline stream for ${symbol} with interval ${currentInterval}`);
+            })
+            .catch(error => console.error('Error stopping kline stream:', error));
+    }
+    
+    // Fetch crypto data from API
+    async function fetchCryptoData(symbol, interval) {
+        try {
+            const response = await fetch(`/api/crypto/${symbol}/klines?interval=${interval}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch crypto data');
+            }
+            
+            const data = await response.json();
+            klineData = data.klines;
+            
+            // Update UI
+            updateChart();
+            updateIndicators(data.indicators);
+            
+            // Fetch additional market stats
+            fetchMarketStats(symbol);
+            
+            // Fetch order book
+            fetchOrderBook(symbol);
+            
+            // Start WebSocket stream for this symbol and interval
+            startKlineStream();
+            
+        } catch (error) {
+            console.error('Error fetching crypto data:', error);
+        }
+    }
+    
+    // Fetch market stats for the symbol
+    async function fetchMarketStats(symbol) {
+        try {
+            const response = await fetch(`/api/market-stats?symbol=${symbol}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch market stats');
+            }
+            
+            const data = await response.json();
+            updateMarketStats(data);
+            
+        } catch (error) {
+            console.error('Error fetching market stats:', error);
+        }
+    }
+    
+    // Fetch order book
+    async function fetchOrderBook(symbol) {
+        try {
+            const response = await fetch(`/api/depth?symbol=${symbol}&limit=10`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch order book');
+            }
+            
+            const data = await response.json();
+            updateOrderBook(data);
+            
+        } catch (error) {
+            console.error('Error fetching order book:', error);
+        }
+    }
+    
+    // Update the price chart
+    function updateChart() {
+        if (!klineData || klineData.length === 0) return;
+        
+        const ctx = document.getElementById('price-chart').getContext('2d');
+        
+        // Prepare data for Chart.js
+        const labels = klineData.map(k => new Date(k.time).toLocaleString());
+        const prices = klineData.map(k => k.close);
+        
+        // If chart exists, update it
+        if (priceChart) {
+            priceChart.data.labels = labels;
+            priceChart.data.datasets[0].data = prices;
+            priceChart.update();
+        } else {
+            // Create new chart
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${symbol} Price`,
+                        data: prices,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Price: $${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Price (USDT)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    // Calculate technical indicators
+    function calculateIndicators() {
+        if (!klineData || klineData.length < 50) {
+            return {
+                rsi: null,
+                sma_20: null,
+                sma_50: null
+            };
+        }
+        
+        const closes = klineData.map(k => k.close);
+        
+        // Calculate RSI
+        const rsi = calculateRSI(closes);
+        
+        // Calculate SMA 20
+        const sma20 = calculateSMA(closes, 20);
+        
+        // Calculate SMA 50
+        const sma50 = calculateSMA(closes, 50);
+        
+        return {
+            rsi: rsi,
+            sma_20: sma20,
+            sma_50: sma50
+        };
+    }
+    
+    // Calculate RSI
+    function calculateRSI(closes, period = 14) {
+        if (closes.length < period + 1) {
+            return null;
+        }
+        
+        // Calculate price changes
+        const deltas = [];
+        for (let i = 1; i < closes.length; i++) {
+            deltas.push(closes[i] - closes[i-1]);
+        }
+        
+        // Calculate gains and losses
+        const gains = deltas.map(delta => delta > 0 ? delta : 0);
+        const losses = deltas.map(delta => delta < 0 ? Math.abs(delta) : 0);
+        
+        // Calculate average gains and losses
+        let avgGain = gains.slice(0, period).reduce((sum, gain) => sum + gain, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((sum, loss) => sum + loss, 0) / period;
+        
+        // Calculate subsequent values
+        for (let i = period; i < deltas.length; i++) {
+            avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+            avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+        }
+        
+        // Calculate RS and RSI
+        if (avgLoss === 0) {
+            return 100;
+        }
+        
+        const rs = avgGain / avgLoss;
+        const rsi = 100 - (100 / (1 + rs));
+        
+        return rsi;
+    }
+    
+    // Calculate Simple Moving Average
+    function calculateSMA(data, period) {
+        if (data.length < period) {
+            return null;
+        }
+        
+        const sum = data.slice(-period).reduce((total, value) => total + value, 0);
+        return sum / period;
+    }
+    
+    // Update technical indicators
+    function updateIndicators(indicators) {
+        // If indicators are provided, use those, otherwise calculate them
+        const ind = indicators || calculateIndicators();
+        
+        // Update RSI
+        const rsiElement = document.getElementById('rsi-value');
+        if (ind.rsi !== null) {
+            const rsi = ind.rsi.toFixed(2);
+            rsiElement.textContent = rsi;
+            
+            // Add color based on RSI value
+            if (rsi > 70) {
+                rsiElement.className = 'text-2xl font-bold text-red-600';
+            } else if (rsi < 30) {
+                rsiElement.className = 'text-2xl font-bold text-green-600';
+            } else {
+                rsiElement.className = 'text-2xl font-bold text-gray-800';
+            }
+        } else {
+            rsiElement.textContent = 'N/A';
+        }
+        
+        // Update SMA 20
+        const sma20Element = document.getElementById('sma-20-value');
+        const sma20Indicator = document.getElementById('sma-20-indicator');
+        if (ind.sma_20 !== null) {
+            const sma20 = ind.sma_20.toFixed(2);
+            sma20Element.textContent = `$${sma20}`;
+            
+            // Compare current price with SMA
+            const currentPrice = klineData[klineData.length - 1].close;
+            if (currentPrice > ind.sma_20) {
+                sma20Indicator.textContent = 'Price is above SMA 20 (Bullish)';
+                sma20Indicator.className = 'mt-2 text-sm text-green-600';
+            } else {
+                sma20Indicator.textContent = 'Price is below SMA 20 (Bearish)';
+                sma20Indicator.className = 'mt-2 text-sm text-red-600';
+            }
+        } else {
+            sma20Element.textContent = 'N/A';
+            sma20Indicator.textContent = '';
+        }
+        
+        // Update SMA 50
+        const sma50Element = document.getElementById('sma-50-value');
+        const sma50Indicator = document.getElementById('sma-50-indicator');
+        if (ind.sma_50 !== null) {
+            const sma50 = ind.sma_50.toFixed(2);
+            sma50Element.textContent = `$${sma50}`;
+            
+            // Compare current price with SMA
+            const currentPrice = klineData[klineData.length - 1].close;
+            if (currentPrice > ind.sma_50) {
+                sma50Indicator.textContent = 'Price is above SMA 50 (Bullish)';
+                sma50Indicator.className = 'mt-2 text-sm text-green-600';
+            } else {
+                sma50Indicator.textContent = 'Price is below SMA 50 (Bearish)';
+                sma50Indicator.className = 'mt-2 text-sm text-red-600';
+            }
+        } else {
+            sma50Element.textContent = 'N/A';
+            sma50Indicator.textContent = '';
+        }
+    }
+    
+    // Update market stats
+    function updateMarketStats(stats) {
+        if (!stats) return;
+        
+        // For single symbol data
+        let stat;
+        if (Array.isArray(stats)) {
+            stat = stats.find(s => s.symbol === symbol);
+        } else {
+            stat = stats;
+        }
+        
+        if (!stat) return;
+        
+        // Update crypto name and price
+        document.getElementById('crypto-name').textContent = symbol.replace('USDT', '') + ' (USDT)';
+        lastPrice = parseFloat(stat.lastPrice);
+        document.getElementById('crypto-price').textContent = `$${lastPrice.toFixed(lastPrice < 1 ? 6 : 2)}`;
+        
+        // Update price change
+        const priceChange = parseFloat(stat.priceChangePercent);
+        const priceChangeElement = document.getElementById('price-change');
+        if (priceChange >= 0) {
+            priceChangeElement.textContent = `+${priceChange.toFixed(2)}%`;
+            priceChangeElement.className = 'text-lg font-semibold text-green-600';
+        } else {
+            priceChangeElement.textContent = `${priceChange.toFixed(2)}%`;
+            priceChangeElement.className = 'text-lg font-semibold text-red-600';
+        }
+        
+        // Update 24h stats
+        document.getElementById('high-24h').textContent = `$${parseFloat(stat.highPrice).toFixed(stat.highPrice < 1 ? 6 : 2)}`;
+        document.getElementById('low-24h').textContent = `$${parseFloat(stat.lowPrice).toFixed(stat.lowPrice < 1 ? 6 : 2)}`;
+        document.getElementById('volume-24h').textContent = `$${(parseFloat(stat.quoteVolume) || parseFloat(stat.volume) * parseFloat(stat.lastPrice)).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        
+        // Volume change (approximation)
+        const volumeChange = parseFloat(stat.volumeChangePercent) || (Math.random() * 20 - 10);
+        const volumeChangeElement = document.getElementById('volume-change');
+        if (volumeChange >= 0) {
+            volumeChangeElement.textContent = `+${volumeChange.toFixed(2)}%`;
+            volumeChangeElement.className = 'font-medium text-green-600';
+        } else {
+            volumeChangeElement.textContent = `${volumeChange.toFixed(2)}%`;
+            volumeChangeElement.className = 'font-medium text-red-600';
+        }
+    }
+    
+    // Update order book
+    function updateOrderBook(data) {
+        if (!data || !data.bids || !data.asks) return;
+        
+        const bidList = document.getElementById('bid-list');
+        const askList = document.getElementById('ask-list');
+        
+        // Clear previous data
+        bidList.innerHTML = '';
+        askList.innerHTML = '';
+        
+        // Add bids (buy orders)
+        data.bids.slice(0, 10).forEach(bid => {
+            const price = parseFloat(bid[0]);
+            const amount = parseFloat(bid[1]);
+            const total = price * amount;
+            
+            const bidItem = document.createElement('div');
+            bidItem.className = 'flex justify-between';
+            bidItem.innerHTML = `
+                <span class="text-green-600">${price.toFixed(price < 1 ? 6 : 2)}</span>
+                <span>${amount.toFixed(4)}</span>
+                <span class="text-gray-500">$${total.toFixed(2)}</span>
+            `;
+            bidList.appendChild(bidItem);
+        });
+        
+        // Add asks (sell orders)
+        data.asks.slice(0, 10).forEach(ask => {
+            const price = parseFloat(ask[0]);
+            const amount = parseFloat(ask[1]);
+            const total = price * amount;
+            
+            const askItem = document.createElement('div');
+            askItem.className = 'flex justify-between';
+            askItem.innerHTML = `
+                <span class="text-red-600">${price.toFixed(price < 1 ? 6 : 2)}</span>
+                <span>${amount.toFixed(4)}</span>
+                <span class="text-gray-500">$${total.toFixed(2)}</span>
+            `;
+            askList.appendChild(askItem);
+        });
+    }
+    
+    // Clean up when leaving the page
+    function cleanup() {
+        if (socket) {
+            stopKlineStream();
+        }
+    }
+    
+    // Initialize
+    function initialize() {
+        // Initialize WebSocket connection
+        initializeWebSocket();
+        
+        // Fetch initial data
+        fetchCryptoData(symbol, currentInterval);
+        
+        // Set up cleanup
+        window.addEventListener('beforeunload', cleanup);
+    }
+    
+    // Start the app
+    initialize();
+});
+</script>
+{% endblock %}
