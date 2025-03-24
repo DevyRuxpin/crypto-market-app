@@ -107,20 +107,36 @@ def crypto_detail(symbol):
 
 # API Routes
 @app.route('/api/prices')
-@login_required
 def get_prices():
-    print("Fetching prices from Binance API...")
-    prices = BinanceService.get_ticker_prices()
-    print(f"Received {len(prices)} ticker prices from Binance")
-    
-    # If you want to filter to just show a few for debugging
-    if prices and len(prices) > 10:
-        print("First 5 prices:", prices[:5])
-    
-    # If no data from API, return mock data
-    if not prices:
-        print("Using mock data for prices")
-        prices = [
+    """Get all cryptocurrency prices - public endpoint that doesn't require login"""
+    try:
+        print("Fetching prices from Binance API...")
+        prices = BinanceService.get_ticker_prices()
+        print(f"Received {len(prices) if prices else 0} ticker prices from Binance")
+        
+        # If you want to filter to just show a few for debugging
+        if prices and len(prices) > 10:
+            print("First 5 prices:", prices[:5])
+        
+        # If no data from API, return mock data
+        if not prices or len(prices) == 0:
+            print("Using mock data for prices")
+            prices = [
+                {"symbol": "BTCUSDT", "price": "50000.00"},
+                {"symbol": "ETHUSDT", "price": "3000.00"},
+                {"symbol": "BNBUSDT", "price": "400.00"},
+                {"symbol": "ADAUSDT", "price": "1.20"},
+                {"symbol": "SOLUSDT", "price": "150.00"},
+                {"symbol": "XRPUSDT", "price": "0.75"},
+                {"symbol": "DOTUSDT", "price": "20.00"},
+                {"symbol": "DOGEUSDT", "price": "0.15"}
+            ]
+        
+        return jsonify(prices)
+    except Exception as e:
+        print(f"Error in get_prices: {e}")
+        # Return mock data in case of any error
+        return jsonify([
             {"symbol": "BTCUSDT", "price": "50000.00"},
             {"symbol": "ETHUSDT", "price": "3000.00"},
             {"symbol": "BNBUSDT", "price": "400.00"},
@@ -129,9 +145,8 @@ def get_prices():
             {"symbol": "XRPUSDT", "price": "0.75"},
             {"symbol": "DOTUSDT", "price": "20.00"},
             {"symbol": "DOGEUSDT", "price": "0.15"}
-        ]
-    
-    return jsonify(prices)
+        ])
+
 
 @app.route('/api/klines/<symbol>')
 @login_required
