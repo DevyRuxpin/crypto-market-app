@@ -252,3 +252,7 @@ def handle_unsubscribe(stream_name):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     socketio.run(app, host='0.0.0.0', port=port, debug=True)
+else:
+    # For production with Gunicorn
+    # This ensures the socketio instance is properly exposed for Gunicorn
+    application = socketio.server
