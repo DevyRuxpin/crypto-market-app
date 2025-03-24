@@ -1,15 +1,15 @@
 services:
   - type: web
-    name: crypto-market-app  # You can change this to your app's name
+    name: crypto-market-app
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:$PORT app:socketio
     envVars:
       - key: FLASK_SECRET_KEY
-        generateValue: true  # Render will generate a random value
+        generateValue: true
       - key: FLASK_ENV
         value: production
       - key: BINANCE_API_BASE_URL
-        value: https://data-api.binance.vision  # Use this base URL for market data
+        value: https://data-api.binance.vision
       - key: BINANCE_WS_BASE_URL
-        value: wss://data-stream.binance.vision  # Use this base URL for websocket
+        value: wss://data-stream.binance.vision
