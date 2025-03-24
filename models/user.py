@@ -1,22 +1,24 @@
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+import uuid
 
-db = SQLAlchemy()
-
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+class User(UserMixin):
+    # In-memory user storage for this demo
+    # In a real app, you would use a database
+    users = {}
     
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def __init__(self, name, email, password_hash):
+        self.id = str(uuid.uuid4())
+        self.name = name
+        self.email = email
+        self.password_hash = password_hash
         
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        # Save user to in-memory storage
+        User.users[self.id] = self
     
-    def __repr__(self):
-        return f'<User {self.email}>'
+    @staticmethod
+    def find_by_email(email):
+        """Find a user by email address"""
+        for user in User.users.values():
+            if user.email == email:
+                return user
+        return None
