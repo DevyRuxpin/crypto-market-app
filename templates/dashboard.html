@@ -1,381 +1,64 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Crypto Market{% endblock %}
-
-{% block extra_head %}
-<style>
-    .crypto-card {
-        transition: transform 0.2s ease-in-out;
-    }
-    .crypto-card:hover {
-        transform: translateY(-5px);
-    }
-    .price-up {
-        color: #10B981;
-    }
-    .price-down {
-        color: #EF4444;
-    }
-    .price-flash {
-        animation: flash 1s;
-    }
-    @keyframes flash {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(59, 130, 246, 0.1); }
-        100% { background-color: transparent; }
-    }
-</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
-{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-800">Cryptocurrency Market</h1>
-    <p class="text-gray-600">Real-time crypto market data from Binance</p>
-</div>
-
-<div class="mb-4 flex justify-between items-center">
-    <div>
-        <input type="text" id="search-input" placeholder="Search cryptocurrency..." 
-               class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-    </div>
-    <div>
-        <select id="sort-select" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="name">Sort by Name</option>
-            <option value="price">Sort by Price</option>
-            <option value="change">Sort by 24h Change</option>
-            <option value="volume">Sort by Volume</option>
-        </select>
-    </div>
-</div>
-
-<div class="bg-white rounded-lg shadow-md p-4 mb-8">
-    <div id="market-summary" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-blue-50 p-4 rounded-lg">
-            <h3 class="text-lg font-semibold text-gray-700">Total Market Cap</h3>
-            <p id="total-market-cap" class="text-2xl font-bold">Loading...</p>
+<div class="container mt-4">
+    <h1 class="mb-4">Cryptocurrency Dashboard</h1>
+    
+    <div class="mb-4">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="pairFilter" id="allPairs" value="all" checked>
+            <label class="form-check-label" for="allPairs">All Pairs</label>
         </div>
-        <div class="bg-green-50 p-4 rounded-lg">
-            <h3 class="text-lg font-semibold text-gray-700">24h Volume</h3>
-            <p id="total-volume" class="text-2xl font-bold">Loading...</p>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="pairFilter" id="usdtPairs" value="usdt">
+            <label class="form-check-label" for="usdtPairs">USDT Pairs</label>
         </div>
-        <div class="bg-yellow-50 p-4 rounded-lg">
-            <h3 class="text-lg font-semibold text-gray-700">BTC Dominance</h3>
-            <p id="btc-dominance" class="text-2xl font-bold">Loading...</p>
-        </div>
-        <div class="bg-purple-50 p-4 rounded-lg">
-            <h3 class="text-lg font-semibold text-gray-700">Active Cryptocurrencies</h3>
-            <p id="active-cryptos" class="text-2xl font-bold">Loading...</p>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="pairFilter" id="btcPairs" value="btc">
+            <label class="form-check-label" for="btcPairs">BTC Pairs</label>
         </div>
     </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search cryptocurrencies...">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" id="sortByName">Sort by Name</button>
+                <button type="button" class="btn btn-outline-primary" id="sortByPrice">Sort by Price</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading-indicator" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading cryptocurrencies...</p>
+    </div>
+    
+    <div id="error-message" class="alert alert-danger d-none" role="alert">
+        Error loading cryptocurrency data. Please try again later.
+    </div>
+    
+    <div id="crypto-list" class="row">
+        <!-- Cryptocurrencies will be loaded here via JavaScript -->
+    </div>
+    
+    <div id="no-results" class="text-center py-5 d-none">
+        <p>No cryptocurrencies found matching your search criteria.</p>
+    </div>
 </div>
-
-<div id="loading-indicator" class="flex justify-center items-center py-10">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
-</div>
-
-<div id="crypto-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    <!-- Cryptocurrency cards will be populated here by JavaScript -->
-</div>
-
-<div class="text-center mt-8 text-gray-600">
-    <p>Data provided by Binance API</p>
-    <p class="mt-2">
-        <span id="connection-status" class="inline-block px-3 py-1 rounded-full bg-gray-200">
-            WebSocket: Connecting...
-        </span>
-    </p>
-</div>
-
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const cryptoGrid = document.getElementById('crypto-grid');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const searchInput = document.getElementById('search-input');
-    const sortSelect = document.getElementById('sort-select');
-    const connectionStatus = document.getElementById('connection-status');
-    
-    let allCryptos = {};
-    let socket = null;
-    
-    // Initialize Socket.IO connection
-    function initializeWebSocket() {
-        socket = io();
-        
-        socket.on('connect', function() {
-            connectionStatus.textContent = 'WebSocket: Connected';
-            connectionStatus.classList.remove('bg-gray-200', 'bg-red-200');
-            connectionStatus.classList.add('bg-green-200');
-            
-            // Start the ticker stream once connected
-            fetch('/api/stream/start/tickers')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Ticker stream started');
-                    }
-                });
-        });
-        
-        socket.on('disconnect', function() {
-            connectionStatus.textContent = 'WebSocket: Disconnected';
-            connectionStatus.classList.remove('bg-green-200');
-            connectionStatus.classList.add('bg-red-200');
-        });
-        
-        socket.on('ticker_update', function(data) {
-            // Update our local data with the new ticker information
-            data.forEach(ticker => {
-                const symbol = ticker.s;
-                
-                // Only process USDT pairs
-                if (symbol.endsWith('USDT')) {
-                    // If we already have this crypto, update it
-                    if (allCryptos[symbol]) {
-                        const oldPrice = parseFloat(allCryptos[symbol].lastPrice);
-                        const newPrice = parseFloat(ticker.c);
-                        
-                        // Update the crypto data
-                        allCryptos[symbol] = {
-                            symbol: symbol,
-                            lastPrice: ticker.c,
-                            priceChangePercent: ticker.P,
-                            volume: ticker.v,
-                            quoteVolume: ticker.q,
-                            highPrice: ticker.h,
-                            lowPrice: ticker.l,
-                            priceDirection: newPrice > oldPrice ? 'up' : newPrice < oldPrice ? 'down' : 'same'
-                        };
-                        
-                        // Update the UI if this card exists
-                        updateCryptoCard(symbol);
-                    }
-                }
-            });
-            
-            // Update market summary
-            updateMarketSummary();
-        });
-    }
-    
-    // Update a single crypto card with new data
-    function updateCryptoCard(symbol) {
-        const crypto = allCryptos[symbol];
-        const card = document.querySelector(`[data-symbol="${symbol}"]`);
-        
-        if (card) {
-            const priceElement = card.querySelector('.crypto-price');
-            const changeElement = card.querySelector('.price-change');
-            const volumeElement = card.querySelector('.crypto-volume');
-            
-            // Update price with visual indicator
-            if (priceElement) {
-                const formattedPrice = `$${parseFloat(crypto.lastPrice).toFixed(crypto.lastPrice < 1 ? 6 : 2)}`;
-                
-                if (priceElement.textContent !== formattedPrice) {
-                    priceElement.textContent = formattedPrice;
-                    
-                    // Add flash effect
-                    priceElement.classList.remove('price-flash');
-                    void priceElement.offsetWidth; // Trigger reflow to restart animation
-                    priceElement.classList.add('price-flash');
-                    
-                    // Add color based on price direction
-                    if (crypto.priceDirection === 'up') {
-                        priceElement.classList.remove('price-down');
-                        priceElement.classList.add('price-up');
-                    } else if (crypto.priceDirection === 'down') {
-                        priceElement.classList.remove('price-up');
-                        priceElement.classList.add('price-down');
-                    }
-                }
-            }
-            
-            // Update price change
-            if (changeElement) {
-                const priceChangePercent = parseFloat(crypto.priceChangePercent);
-                const priceClass = priceChangePercent >= 0 ? 'price-up' : 'price-down';
-                const priceChangeIcon = priceChangePercent >= 0 ? '↑' : '↓';
-                
-                changeElement.textContent = `${priceChangeIcon} ${Math.abs(priceChangePercent).toFixed(2)}%`;
-                changeElement.className = `price-change ${priceClass} font-semibold`;
-            }
-            
-            // Update volume
-            if (volumeElement) {
-                const volume = parseFloat(crypto.quoteVolume).toLocaleString('en-US', {maximumFractionDigits: 0});
-                volumeElement.textContent = `Vol: $${volume}`;
-            }
-        }
-    }
-    
-    // Fetch market data initially
-    async function fetchMarketData() {
-        try {
-            const response = await fetch('/api/market-stats');
-            if (!response.ok) {
-                throw new Error('Failed to fetch market data');
-            }
-            
-            const data = await response.json();
-            
-            // Convert array to object keyed by symbol for easier updates
-            data.forEach(crypto => {
-                if (crypto.symbol && crypto.symbol.endsWith('USDT')) {
-                    allCryptos[crypto.symbol] = {
-                        ...crypto,
-                        priceDirection: 'same'
-                    };
-                }
-            });
-            
-            return Object.values(allCryptos);
-        } catch (error) {
-            console.error('Error fetching market data:', error);
-            return [];
-        }
-    }
-    
-    // Render cryptocurrency cards
-    function renderCryptos(cryptos) {
-        if (!cryptos || cryptos.length === 0) {
-            cryptoGrid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">No cryptocurrencies found</div>';
-            return;
-        }
-        
-        cryptoGrid.innerHTML = '';
-        
-        cryptos.forEach(crypto => {
-            if (!crypto.symbol || !crypto.symbol.endsWith('USDT')) return;
-            
-            const priceChangePercent = parseFloat(crypto.priceChangePercent);
-            const priceClass = priceChangePercent >= 0 ? 'price-up' : 'price-down';
-            const priceChangeIcon = priceChangePercent >= 0 ? '↑' : '↓';
-            
-            const card = document.createElement('div');
-            card.className = 'crypto-card bg-white rounded-lg shadow-md p-4 hover:shadow-lg cursor-pointer';
-            card.setAttribute('data-symbol', crypto.symbol);
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-lg font-bold">${crypto.symbol.replace('USDT', '')}</h3>
-                    <span class="text-xs bg-gray-200 px-2 py-1 rounded-full">USDT</span>
-                </div>
-                <div class="crypto-price text-2xl font-bold mb-2">$${parseFloat(crypto.lastPrice).toFixed(crypto.lastPrice < 1 ? 6 : 2)}</div>
-                <div class="flex justify-between items-center">
-                    <span class="price-change ${priceClass} font-semibold">${priceChangeIcon} ${Math.abs(priceChangePercent).toFixed(2)}%</span>
-                    <span class="crypto-volume text-gray-500 text-sm">Vol: $${(parseFloat(crypto.quoteVolume) || parseFloat(crypto.volume) * parseFloat(crypto.lastPrice)).toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
-                </div>
-            `;
-            
-            card.addEventListener('click', () => {
-                window.location.href = `/crypto/${crypto.symbol}`;
-            });
-            
-            cryptoGrid.appendChild(card);
-        });
-    }
-    
-    // Filter and sort cryptos
-    function filterAndSortCryptos() {
-        const searchTerm = searchInput.value.toLowerCase
-        const sortBy = sortSelect.value;
-        
-        let filteredCryptos = Object.values(allCryptos).filter(crypto => 
-            crypto.symbol && 
-            crypto.symbol.toLowerCase().includes(searchTerm) && 
-            crypto.symbol.endsWith('USDT')
-        );
-        
-        // Sort cryptos
-        switch(sortBy) {
-            case 'name':
-                filteredCryptos.sort((a, b) => a.symbol.localeCompare(b.symbol));
-                break;
-            case 'price':
-                filteredCryptos.sort((a, b) => parseFloat(b.lastPrice) - parseFloat(a.lastPrice));
-                break;
-            case 'change':
-                filteredCryptos.sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
-                break;
-            case 'volume':
-                filteredCryptos.sort((a, b) => 
-                    (parseFloat(b.quoteVolume) || parseFloat(b.volume) * parseFloat(b.lastPrice)) - 
-                    (parseFloat(a.quoteVolume) || parseFloat(a.volume) * parseFloat(a.lastPrice))
-                );
-                break;
-        }
-        
-        renderCryptos(filteredCryptos);
-    }
-    
-    // Update market summary
-    function updateMarketSummary() {
-        // Calculate total market cap and volume
-        let totalVolume = 0;
-        let btcPrice = 0;
-        let totalMarketCap = 0;
-        let activeCryptos = 0;
-        
-        Object.values(allCryptos).forEach(crypto => {
-            if (crypto.symbol === 'BTCUSDT') {
-                btcPrice = parseFloat(crypto.lastPrice);
-            }
-            
-            if (crypto.symbol.endsWith('USDT')) {
-                activeCryptos++;
-                const volume = parseFloat(crypto.quoteVolume) || parseFloat(crypto.volume) * parseFloat(crypto.lastPrice);
-                totalVolume += volume;
-            }
-        });
-        
-        // Simplified market cap calculation
-        totalMarketCap = totalVolume * 5; // Rough estimate
-        
-        // Update DOM
-        document.getElementById('total-market-cap').textContent = `$${(totalMarketCap).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
-        document.getElementById('total-volume').textContent = `$${(totalVolume).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
-        
-        if (btcPrice > 0 && totalMarketCap > 0) {
-            // Use a more realistic calculation for BTC dominance
-            const btcMarketCap = btcPrice * 19000000; // Approximate BTC supply
-            const btcDominance = (btcMarketCap / totalMarketCap) * 100;
-            document.getElementById('btc-dominance').textContent = `${btcDominance.toFixed(2)}%`;
-        } else {
-            document.getElementById('btc-dominance').textContent = 'N/A';
-        }
-        
-        document.getElementById('active-cryptos').textContent = activeCryptos;
-    }
-    
-    // Initialize
-    async function initialize() {
-        try {
-            // Fetch initial market data
-            await fetchMarketData();
-            loadingIndicator.style.display = 'none';
-            
-            if (Object.keys(allCryptos).length > 0) {
-                updateMarketSummary();
-                filterAndSortCryptos();
-            }
-            
-            // Initialize WebSocket connection
-            initializeWebSocket();
-        } catch (error) {
-            console.error('Error initializing dashboard:', error);
-            loadingIndicator.innerHTML = '<div class="text-red-500">Failed to load cryptocurrency data. Please try again.</div>';
-        }
-    }
-    
-    // Add event listeners
-    searchInput.addEventListener('input', filterAndSortCryptos);
-    sortSelect.addEventListener('change', filterAndSortCryptos);
-    
-    // Start the app
-    initialize();
-});
-</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
