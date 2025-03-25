@@ -6,16 +6,28 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_migrate import Migrate
+import uuid
+
+# Import models and database
+from models import db
 from models.user import User
 from models.portfolio import Portfolio, PortfolioItem
 from models.alert import Alert
+from models.watchlist import Watchlist, WatchlistSymbol
+
+# Import services
 from services.binance_service import BinanceService
 from services.coinmarketcap_service import CoinMarketCapService
 from services.websocket_service import WebSocketService
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'dev-key-for-testing')
+app.config.from_object('config.Config')
+
+# Initialize SQLAlchemy
+db.init_app(app)
+migrate = Migrate(app, db)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -27,15 +39,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 ws_service = WebSocketService(socketio)
 
 # Initialize services
-coinmarketcap_service = CoinMarketCapService(api_key=os.environ.get('CMC_API_KEY', 'bda79d78-5f5c-41c3-892e-3584b698e234'))
+coinmarketcap_api_key = os.environ.get('CMC_API_KEY', '')
+coinmarketcap_service = CoinMarketCapService(api_key=coinmarketcap_api_key)
 
 # User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
-    # In a real app, you would load the user from a database
-    if user_id in User.users:
-        return User.users[user_id]
-    return None
+    return User.query.get(user_id)
 
 # Template context processor
 @app.context_processor
@@ -61,11 +71,14 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             login_user(user, remember=remember)
-            flash('Login successful!')
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            flash('Login successful!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
         else:
-            flash('Invalid email or password')
+            flash('Invalid email or password', 'danger')
             
     return render_template('login.html')
 
@@ -81,17 +94,34 @@ def signup():
         confirm_password = request.form.get('confirm_password')
         
         if User.find_by_email(email):
-            flash('Email already registered')
+            flash('Email already registered', 'danger')
             return render_template('signup.html')
             
         if password != confirm_password:
-            flash('Passwords do not match')
+            flash('Passwords do not match', 'danger')
             return render_template('signup.html')
             
         password_hash = generate_password_hash(password)
-        user = User(name=name, email=email, password_hash=password_hash)
+        user = User(
+            id=str(uuid.uuid4()),
+            name=name, 
+            email=email, 
+            password_hash=password_hash
+        )
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        # Create default portfolio and watchlist
+        default_portfolio = Portfolio(user_id=user.id)
+        default_watchlist = Watchlist(user_id=user.id)
+        
+        db.session.add(default_portfolio)
+        db.session.add(default_watchlist)
+        db.session.commit()
+        
         login_user(user)
-        flash('Account created successfully!')
+        flash('Account created successfully!', 'success')
         return redirect(url_for('dashboard'))
         
     return render_template('signup.html')
@@ -100,7 +130,7 @@ def signup():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out')
+    flash('You have been logged out', 'info')
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
@@ -253,11 +283,13 @@ def get_moving_averages(symbol):
 @login_required
 def get_portfolio():
     user_id = current_user.id
-    portfolio = Portfolio.get_by_user_id(user_id)
+    portfolio = Portfolio.query.filter_by(user_id=user_id).first()
     
     if not portfolio:
         # Create empty portfolio if it doesn't exist
         portfolio = Portfolio(user_id=user_id)
+        db.session.add(portfolio)
+        db.session.commit()
     
     # Get current prices for portfolio items
     portfolio_data = portfolio.to_dict()
@@ -294,20 +326,29 @@ def add_portfolio_item():
     symbol = data.get('symbol', '').upper()
     quantity = float(data.get('quantity', 0))
     purchase_price = float(data.get('purchase_price', 0))
-    purchase_date = data.get('purchase_date', datetime.now().isoformat())
+    purchase_date_str = data.get('purchase_date', datetime.now().isoformat())
+    
+    # Parse purchase date
+    try:
+        purchase_date = datetime.fromisoformat(purchase_date_str)
+    except ValueError:
+        purchase_date = datetime.now()
     
     if not symbol or quantity <= 0 or purchase_price <= 0:
         return jsonify({"error": "Invalid input data"}), 400
     
     user_id = current_user.id
-    portfolio = Portfolio.get_by_user_id(user_id)
+    portfolio = Portfolio.query.filter_by(user_id=user_id).first()
     
     if not portfolio:
         portfolio = Portfolio(user_id=user_id)
+        db.session.add(portfolio)
+        db.session.commit()
     
     # Add new item
     invested = quantity * purchase_price
     item = PortfolioItem(
+        portfolio_id=portfolio.id,
         symbol=symbol,
         quantity=quantity,
         purchase_price=purchase_price,
@@ -315,7 +356,8 @@ def add_portfolio_item():
         invested=invested
     )
     
-    portfolio.add_item(item)
+    db.session.add(item)
+    db.session.commit()
     
     return jsonify({"success": True, "message": "Portfolio item added successfully"})
 
@@ -330,7 +372,7 @@ def update_portfolio_item(item_id):
         return jsonify({"error": "Invalid input data"}), 400
     
     user_id = current_user.id
-    portfolio = Portfolio.get_by_user_id(user_id)
+    portfolio = Portfolio.query.filter_by(user_id=user_id).first()
     
     if not portfolio:
         return jsonify({"error": "Portfolio not found"}), 404
@@ -348,7 +390,7 @@ def update_portfolio_item(item_id):
 @login_required
 def delete_portfolio_item(item_id):
     user_id = current_user.id
-    portfolio = Portfolio.get_by_user_id(user_id)
+    portfolio = Portfolio.query.filter_by(user_id=user_id).first()
     
     if not portfolio:
         return jsonify({"error": "Portfolio not found"}), 404
@@ -365,7 +407,7 @@ def delete_portfolio_item(item_id):
 @login_required
 def get_alerts():
     user_id = current_user.id
-    alerts = Alert.get_by_user_id(user_id)
+    alerts = Alert.query.filter_by(user_id=user_id).all()
     
     # Check if any alerts have been triggered
     if alerts:
@@ -379,9 +421,10 @@ def get_alerts():
                 # Check if alert conditions are met
                 if (alert.alert_type == 'above' and current_price >= alert.target_price) or \
                    (alert.alert_type == 'below' and current_price <= alert.target_price):
-                    alert.triggered = True
-                    alert.triggered_at = datetime.now().isoformat()
-                    alert.save()
+                    if not alert.triggered:
+                        alert.triggered = True
+                        alert.triggered_at = datetime.now()
+                        db.session.commit()
     
     return jsonify([alert.to_dict() for alert in alerts])
 
@@ -403,11 +446,12 @@ def add_alert():
         symbol=symbol,
         alert_type=alert_type,
         target_price=target_price,
-        created_at=datetime.now().isoformat(),
+        created_at=datetime.now(),
         triggered=False
     )
     
-    alert.save()
+    db.session.add(alert)
+    db.session.commit()
     
     return jsonify({"success": True, "message": "Alert added successfully", "alert": alert.to_dict()})
 
@@ -432,6 +476,82 @@ def reset_alert(alert_id):
         return jsonify({"error": "Alert not found"}), 404
     
     return jsonify({"success": True, "message": "Alert reset successfully"})
+
+# Watchlist API endpoints
+@app.route('/api/watchlists', methods=['GET'])
+@login_required
+def get_watchlists():
+    user_id = current_user.id
+    watchlists = Watchlist.query.filter_by(user_id=user_id).all()
+    return jsonify([watchlist.to_dict() for watchlist in watchlists])
+
+@app.route('/api/watchlists/<watchlist_id>', methods=['GET'])
+@login_required
+def get_watchlist(watchlist_id):
+    watchlist = Watchlist.query.get(watchlist_id)
+    
+    if not watchlist or watchlist.user_id != current_user.id:
+        return jsonify({"error": "Watchlist not found"}), 404
+        
+    return jsonify(watchlist.to_dict())
+
+@app.route('/api/watchlists', methods=['POST'])
+@login_required
+def create_watchlist():
+    data = request.json
+    name = data.get('name', 'New Watchlist')
+    
+    watchlist = Watchlist(
+        user_id=current_user.id,
+        name=name
+    )
+    
+    db.session.add(watchlist)
+    db.session.commit()
+    
+    return jsonify({"success": True, "message": "Watchlist created", "watchlist": watchlist.to_dict()})
+
+@app.route('/api/watchlists/<watchlist_id>/symbols', methods=['POST'])
+@login_required
+def add_to_watchlist(watchlist_id):
+    data = request.json
+    symbol = data.get('symbol', '').upper()
+    
+    if not symbol:
+        return jsonify({"error": "Symbol is required"}), 400
+        
+    watchlist = Watchlist.query.get(watchlist_id)
+    
+    if not watchlist or watchlist.user_id != current_user.id:
+        return jsonify({"error": "Watchlist not found"}), 404
+        
+    success = watchlist.add_symbol(symbol)
+    
+    if success:
+        return jsonify({"success": True, "message": "Symbol added to watchlist"})
+    else:
+        return jsonify({"error": "Symbol already in watchlist"}), 400
+
+@app.route('/api/watchlists/<watchlist_id>/symbols', methods=['DELETE'])
+@login_required
+def remove_from_watchlist(watchlist_id):
+    data = request.json
+    symbol = data.get('symbol', '').upper()
+    
+    if not symbol:
+        return jsonify({"error": "Symbol is required"}), 400
+        
+    watchlist = Watchlist.query.get(watchlist_id)
+    
+    if not watchlist or watchlist.user_id != current_user.id:
+        return jsonify({"error": "Watchlist not found"}), 404
+        
+    success = watchlist.remove_symbol(symbol)
+    
+    if success:
+        return jsonify({"success": True, "message": "Symbol removed from watchlist"})
+    else:
+        return jsonify({"error": "Symbol not found in watchlist"}), 404
 
 # CoinMarketCap API endpoints
 @app.route('/api/coinmarketcap/listings')
@@ -463,75 +583,67 @@ def get_cmc_info():
 @app.route('/api/coinmarketcap/quotes')
 @login_required
 def get_cmc_quotes():
-    symbol = request.args.get('symbol', 'BTC')
+    symbols = request.args.get('symbols', 'BTC,ETH').split(',')
     
     try:
-        data = coinmarketcap_service.get_quotes(symbol)
+        data = coinmarketcap_service.get_quotes(symbols)
         return jsonify(data)
     except Exception as e:
         print(f"Error in CoinMarketCap API: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/coinmarketcap/global-metrics')
-def get_cmc_global_metrics():
-    try:
-        data = coinmarketcap_service.get_global_metrics()
-        return jsonify(data)
-    except Exception as e:
-        print(f"Error in CoinMarketCap API: {e}")
-        return jsonify({"error": str(e)}), 500
-
-# User settings
+# User settings API
 @app.route('/api/settings', methods=['GET'])
 @login_required
 def get_settings():
-    user_id = current_user.id
-    settings = current_user.settings
-    
-    return jsonify(settings)
+    return jsonify(current_user.settings)
 
 @app.route('/api/settings', methods=['PUT'])
 @login_required
 def update_settings():
-    user_id = current_user.id
     data = request.json
-    
-    # Update user settings
-    current_user.update_settings(data)
-    
-    return jsonify({"success": True, "message": "Settings updated successfully", "settings": current_user.settings})
+    updated_settings = current_user.update_settings(data)
+    db.session.commit()
+    return jsonify(updated_settings)
 
-# WebSocket events
+# Error handlers
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# WebSocket event handlers
 @socketio.on('connect')
 def handle_connect():
-    print('Client connected')
+    if current_user.is_authenticated:
+        join_room(f'user_{current_user.id}')
+        print(f"User {current_user.id} connected to WebSocket")
+    else:
+        print("Anonymous user connected to WebSocket")
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print('Client disconnected')
+    if current_user.is_authenticated:
+        print(f"User {current_user.id} disconnected from WebSocket")
+    else:
+        print("Anonymous user disconnected from WebSocket")
 
-@socketio.on('join')
-def handle_join(data):
-    room = data['symbol']
-    join_room(room)
-    print(f'Client joined room: {room}')
-    
-    # Start streaming for this symbol if not already
-    ws_service.subscribe_symbol(room)
+@socketio.on('subscribe_price')
+def handle_price_subscribe(data):
+    symbol = data.get('symbol')
+    if symbol:
+        join_room(f'price_{symbol}')
+        print(f"User subscribed to price updates for {symbol}")
 
-@socketio.on('leave')
-def handle_leave(data):
-    room = data['symbol']
-    leave_room(room)
-    print(f'Client left room: {room}')
-    
-    # Check if room is empty and stop streaming if needed
-    if not ws_service.has_clients(room):
-        ws_service.unsubscribe_symbol(room)
+@socketio.on('unsubscribe_price')
+def handle_price_unsubscribe(data):
+    symbol = data.get('symbol')
+    if symbol:
+        leave_room(f'price_{symbol}')
+        print(f"User unsubscribed from price updates for {symbol}")
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
-else:
-    # For production with Gunicorn
-    application = socketio.server
+    socketio.run(app, debug=True, host='0.0.0.0')
