@@ -9,14 +9,20 @@ from flask_migrate import Migrate
 import uuid
 from forms import LoginForm  # Ensure you import your form class
 from models import User, db
+from flask_caching import Cache
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
+# Add caching configuration
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+cache = Cache(app)
+
 # Fix PostgreSQL connection string if needed (for Render)
 database_url = app.config.get('SQLALCHEMY_DATABASE_URI')
-if database_url and database_url.startswith('postgres://'):
+if (database_url and database_url.startswith('postgres://')):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
 
 # Initialize SQLAlchemy
@@ -145,6 +151,11 @@ def settings():
 @app.route('/api/prices')
 def get_prices():
     try:
+        # Check cache first
+        cached_prices = cache.get('prices')
+        if cached_prices:
+            return jsonify(cached_prices)
+
         print("Fetching prices from Binance API...")
         all_prices = BinanceService.get_ticker_prices()
         print(f"Received {len(all_prices) if all_prices else 0} ticker prices from Binance")
@@ -153,13 +164,8 @@ def get_prices():
         major_coins = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'DOGE', 'AVAX', 'LINK', 'MATIC', 'UNI', 'LTC']
         
         if all_prices:
-            # Filter to only show USDT pairs and major coins
-            filtered_prices = [p for p in all_prices if p['symbol'].endswith('USDT') and any(p['symbol'].startswith(coin) for coin in major_coins)]
-            
-            # Sort by market cap (using symbol as proxy for now)
-            filtered_prices.sort(key=lambda x: major_coins.index(next((coin for coin in major_coins if x['symbol'].startswith(coin)), 'ZZZ')) if any(x['symbol'].startswith(coin) for coin in major_coins) else 'ZZZ')
-            
-            print(f"Filtered to {len(filtered_prices)} major USD pairs")
+            filtered_prices = filter_and_sort_prices(all_prices, major_coins)
+            cache.set('prices', filtered_prices)  # Cache the filtered prices
             return jsonify(filtered_prices)
         
         # If no data from API, return mock data
@@ -178,17 +184,13 @@ def get_prices():
         return jsonify(prices)
     except Exception as e:
         print(f"Error in get_prices: {e}")
-        # Return mock data in case of any error
-        return jsonify([
-            {"symbol": "BTCUSDT", "price": "50000.00"},
-            {"symbol": "ETHUSDT", "price": "3000.00"},
-            {"symbol": "BNBUSDT", "price": "400.00"},
-            {"symbol": "XRPUSDT", "price": "0.75"},
-            {"symbol": "ADAUSDT", "price": "1.20"},
-            {"symbol": "SOLUSDT", "price": "150.00"},
-            {"symbol": "DOTUSDT", "price": "20.00"},
-            {"symbol": "DOGEUSDT", "price": "0.15"}
-        ])
+        return jsonify({"error": "Failed to fetch prices"}), 500
+
+def filter_and_sort_prices(prices, major_coins):
+    # Abstracted filtering and sorting logic
+    filtered = [p for p in prices if p['symbol'].endswith('USDT') and any(p['symbol'].startswith(coin) for coin in major_coins)]
+    filtered.sort(key=lambda x: major_coins.index(next((coin for coin in major_coins if x['symbol'].startswith(coin)), 'ZZZ')))
+    return filtered
 
 @app.route('/api/klines/<symbol>')
 @login_required
@@ -636,3 +638,4 @@ if __name__ == '__main__':
         # In production, use regular app.run (gunicorn will handle this)
         port = int(os.environ.get('PORT', 5000))
         app.run(host='0.0.0.0', port=port)
+
