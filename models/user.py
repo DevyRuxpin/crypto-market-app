@@ -2,6 +2,9 @@ from . import db  # Import db from __init__.py
 from flask_login import UserMixin
 import json
 from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
