@@ -6,6 +6,7 @@ Flask-Mail==0.9.1
 Flask-Migrate==4.0.5
 Flask-Bcrypt==1.0.1
 Flask-Limiter==3.5.0
+Flask-SocketIO==5.3.4  # Added this line
 email-validator==2.0.0
 pyotp==2.9.0
 qrcode==7.4.2
@@ -25,4 +26,4 @@ Jinja2==3.1.2
 MarkupSafe==2.1.3
 SQLAlchemy==2.0.22
 alembic==1.12.1
-eventlet==0.33.3  # Added for your gunicorn worker class
+eventlet==0.33.3  # Required for Flask-SocketIO with gunicorn
