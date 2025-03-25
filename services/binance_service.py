@@ -13,16 +13,22 @@ class BinanceService:
     BASE_URL = 'https://data-api.binance.vision'
     
     @staticmethod
-    def get_ticker_prices():
-        """Get all ticker prices"""
-        try:
-            response = requests.get(f"{BinanceService.BASE_URL}/api/v3/ticker/price")
-            if response.status_code == 200:
+    def make_request(endpoint, params=None, retries=3, delay=2):
+        for attempt in range(retries):
+            try:
+                response = requests.get(f"{BinanceService.BASE_URL}{endpoint}", params=params)
+                response.raise_for_status()
                 return response.json()
-            return None
-        except Exception as e:
-            print(f"Error getting ticker prices: {e}")
-            return None
+            except requests.RequestException as e:
+                print(f"Error making request to {endpoint}: {e}")
+                if attempt < retries - 1:
+                    time.sleep(delay)
+                else:
+                    return None
+
+    @staticmethod
+    def get_ticker_prices():
+        return BinanceService.make_request('/api/v3/ticker/price')
     
     @staticmethod
     def get_ticker_price(symbol):
