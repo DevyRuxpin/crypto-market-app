@@ -1,0 +1,819 @@
+{% extends 'base.html' %}
+
+{% block title %}Portfolio - Crypto Market{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Your Portfolio</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary" id="addAssetBtn">
+            <i class="fas fa-plus me-1"></i> Add Asset
+        </button>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>Total Value</h5>
+                            <h3 id="totalValue">\$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>Total Invested</h5>
+                            <h3 id="totalInvested">\$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>Total Profit/Loss</h5>
+                            <h3 id="totalProfitLoss">\$0.00</h3>
+                            <span id="totalProfitLossPercent" class="badge"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>24h Change</h5>
+                            <h3 id="change24h">\$0.00</h3>
+                            <span id="change24hPercent" class="badge"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Assets</h4>
+            </div>
+            <div class="card-body">
+                <div id="portfolioEmpty" class="text-center py-5" style="display: none;">
+                    <p class="mb-3">You don't have any assets in your portfolio yet.</p>
+                    <button class="btn btn-primary" id="addFirstAssetBtn">
+                        <i class="fas fa-plus me-1"></i> Add Your First Asset
+                    </button>
+                </div>
+                <div id="portfolioContent">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="portfolioTable">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Quantity</th>
+                                    <th>Avg. Buy Price</th>
+                                    <th>Current Price</th>
+                                    <th>Value</th>
+                                    <th>Profit/Loss</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolioTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Portfolio Allocation</h4>
+            </div>
+            <div class="card-body">
+                <div id="allocationChartContainer">
+                    <canvas id="allocationChart"></canvas>
+                </div>
+                <div id="noAllocationData" class="text-center py-5" style="display: none;">
+                    <p>Add assets to see your portfolio allocation.</p>
+                </div>
+            </div>
+        </div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Performance</h4>
+            </div>
+            <div class="card-body">
+                <div id="performanceChartContainer">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                <div id="noPerformanceData" class="text-center py-5" style="display: none;">
+                    <p>Add assets to see your portfolio performance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Asset Modal -->
+<div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAssetModalLabel">Add Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAssetForm">
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="symbol" placeholder="BTC" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" step="0.000001" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="purchasePrice" class="form-label">Average Purchase Price (USD)</label>
+                        <input type="number" class="form-control" id="purchasePrice" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="purchaseDate" class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchaseDate" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAsset">Add Asset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Asset Modal -->
+<div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAssetModalLabel">Edit Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAssetForm">
+                    <input type="hidden" id="editItemId">
+                    <div class="mb-3">
+                        <label for="editSymbol" class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="editSymbol" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="editQuantity" step="0.000001" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPurchasePrice" class="form-label">Average Purchase Price (USD)</label>
+                        <input type="number" class="form-control" id="editPurchasePrice" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPurchaseDate" class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" id="editPurchaseDate" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateAsset">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <span id="deleteAssetSymbol"></span> from your portfolio?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize variables
+        let portfolioData = null;
+        let allocationChart = null;
+        let performanceChart = null;
+        
+        // Socket.IO for real-time updates
+        const socket = io();
+        
+        // Initialize
+        loadPortfolio();
+        
+        // Set up interval updates (every 60 seconds)
+        setInterval(loadPortfolio, 60000);
+        
+        // Add Asset button click
+        document.getElementById('addAssetBtn').addEventListener('click', function() {
+            showAddAssetModal();
+        });
+        
+        // Add First Asset button click
+        document.getElementById('addFirstAssetBtn')?.addEventListener('click', function() {
+            showAddAssetModal();
+        });
+        
+        // Save Asset button click
+        document.getElementById('saveAsset').addEventListener('click', function() {
+            saveAsset();
+        });
+        
+        // Update Asset button click
+        document.getElementById('updateAsset').addEventListener('click', function() {
+            updateAsset();
+        });
+        
+        // Confirm Delete button click
+        document.getElementById('confirmDelete').addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            deleteAsset(itemId);
+        });
+        
+        // Load portfolio data
+        function loadPortfolio() {
+            fetch('/api/portfolio')
+                .then(response => response.json())
+                .then(data => {
+                    portfolioData = data;
+                    updatePortfolioUI(data);
+                })
+                .catch(error => {
+                    console.error('Error loading portfolio:', error);
+                });
+        }
+        
+        // Update portfolio UI with data
+        function updatePortfolioUI(data) {
+            const portfolioEmpty = document.getElementById('portfolioEmpty');
+            const portfolioContent = document.getElementById('portfolioContent');
+            const noAllocationData = document.getElementById('noAllocationData');
+            const allocationChartContainer = document.getElementById('allocationChartContainer');
+            const noPerformanceData = document.getElementById('noPerformanceData');
+            const performanceChartContainer = document.getElementById('performanceChartContainer');
+            
+            // Check if portfolio is empty
+            if (!data.items || data.items.length === 0) {
+                portfolioEmpty.style.display = 'block';
+                portfolioContent.style.display = 'none';
+                noAllocationData.style.display = 'block';
+                allocationChartContainer.style.display = 'none';
+                noPerformanceData.style.display = 'block';
+                performanceChartContainer.style.display = 'none';
+                return;
+            }
+            
+            portfolioEmpty.style.display = 'none';
+            portfolioContent.style.display = 'block';
+            noAllocationData.style.display = 'none';
+            allocationChartContainer.style.display = 'block';
+            noPerformanceData.style.display = 'none';
+            performanceChartContainer.style.display = 'block';
+            
+            // Format numbers
+            const formatCurrency = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            const formatCurrencyDetail = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            });
+            
+            const formatPercent = new Intl.NumberFormat('en-US', {
+                style: 'percent',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Update summary values
+            document.getElementById('totalValue').textContent = formatCurrency.format(data.total_current_value || 0);
+            document.getElementById('totalInvested').textContent = formatCurrency.format(data.total_invested || 0);
+            
+            const totalProfitLoss = data.total_profit_loss || 0;
+            const totalProfitLossElement = document.getElementById('totalProfitLoss');
+            totalProfitLossElement.textContent = formatCurrency.format(totalProfitLoss);
+            totalProfitLossElement.className = totalProfitLoss >= 0 ? 'text-success' : 'text-danger';
+            
+            const totalProfitLossPercent = data.total_profit_loss_percent || 0;
+            const totalProfitLossPercentElement = document.getElementById('totalProfitLossPercent');
+            totalProfitLossPercentElement.textContent = formatPercent.format(totalProfitLossPercent / 100);
+            totalProfitLossPercentElement.className = 'badge ' + (totalProfitLossPercent >= 0 ? 'bg-success' : 'bg-danger');
+            
+            const change24h = data.change_24h || 0;
+            const change24hElement = document.getElementById('change24h');
+            change24hElement.textContent = formatCurrency.format(change24h);
+            change24hElement.className = change24h >= 0 ? 'text-success' : 'text-danger';
+            
+            const change24hPercent = data.change_24h_percent || 0;
+            const change24hPercentElement = document.getElementById('change24hPercent');
+            change24hPercentElement.textContent = formatPercent.format(change24hPercent / 100);
+            change24hPercentElement.className = 'badge ' + (change24hPercent >= 0 ? 'bg-success' : 'bg-danger');
+<script>
+            // Update portfolio table
+            const tableBody = document.getElementById('portfolioTableBody');
+            tableBody.innerHTML = '';
+            
+            data.items.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const profitLoss = item.profit_loss || 0;
+                const profitLossPercent = item.profit_loss_percent || 0;
+                const profitLossClass = profitLoss >= 0 ? 'text-success' : 'text-danger';
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <strong>${item.symbol}</strong>
+                        </div>
+                    </td>
+                    <td>${item.quantity}</td>
+                    <td>${formatCurrencyDetail.format(item.purchase_price)}</td>
+                    <td>${formatCurrencyDetail.format(item.current_price)}</td>
+                    <td>${formatCurrency.format(item.current_value)}</td>
+                    <td class="${profitLossClass}">
+                        ${formatCurrency.format(profitLoss)}
+                        <small>(${formatPercent.format(profitLossPercent / 100)})</small>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary edit-asset" data-item-id="${item.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger delete-asset" data-item-id="${item.id}" data-symbol="${item.symbol}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners for edit and delete buttons
+            document.querySelectorAll('.edit-asset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.getAttribute('data-item-id');
+                    showEditAssetModal(itemId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-asset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.getAttribute('data-item-id');
+                    const symbol = this.getAttribute('data-symbol');
+                    showDeleteConfirmModal(itemId, symbol);
+                });
+            });
+            
+            // Update allocation chart
+            updateAllocationChart(data.items);
+            
+            // Update performance chart
+            updatePerformanceChart(data.items);
+            
+            // Subscribe to WebSocket updates for these symbols
+            data.items.forEach(item => {
+                socket.emit('join', { symbol: item.symbol + 'USDT' });
+            });
+        }
+        
+        // Update allocation chart
+        function updateAllocationChart(items) {
+            const ctx = document.getElementById('allocationChart').getContext('2d');
+            
+            // Prepare data
+            const labels = items.map(item => item.symbol);
+            const data = items.map(item => item.current_value);
+            const backgroundColors = [
+                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                '#5a5c69', '#6f42c1', '#20c9a6', '#3498db', '#e67e22',
+                '#2ecc71', '#9b59b6', '#f39c12', '#d35400', '#c0392b'
+            ];
+            
+            // Destroy previous chart if it exists
+            if (allocationChart) {
+                allocationChart.destroy();
+            }
+            
+            // Create new chart
+            allocationChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors.slice(0, items.length),
+                        hoverBackgroundColor: backgroundColors.slice(0, items.length),
+                        hoverBorderColor: 'rgba(234, 236, 244, 1)',
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    tooltips: {
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                const value = data.datasets[0].data[tooltipItem.index];
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(2) + '%';
+                                const symbol = data.labels[tooltipItem.index];
+                                
+                                const formatter = new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: 'USD'
+                                });
+                                
+                                return `${symbol}: ${formatter.format(value)} (${percentage})`;
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+        
+        // Update performance chart
+        function updatePerformanceChart(items) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Prepare data - sort by profit/loss percent
+            const sortedItems = [...items].sort((a, b) => b.profit_loss_percent - a.profit_loss_percent);
+            
+            const labels = sortedItems.map(item => item.symbol);
+            const data = sortedItems.map(item => item.profit_loss_percent);
+            const backgroundColors = data.map(value => value >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)');
+            
+            // Destroy previous chart if it exists
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            // Create new chart
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit/Loss %',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Show modal to add asset
+        function showAddAssetModal() {
+            // Reset form
+            document.getElementById('addAssetForm').reset();
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('purchaseDate').value = today;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('addAssetModal'));
+            modal.show();
+        }
+        
+        // Save new asset to portfolio
+        function saveAsset() {
+            const symbol = document.getElementById('symbol').value.toUpperCase();
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
+            const purchaseDate = document.getElementById('purchaseDate').value;
+            
+            if (!symbol || !quantity || !purchasePrice || !purchaseDate) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            fetch('/api/portfolio/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbol: symbol,
+                    quantity: quantity,
+                    purchase_price: purchasePrice,
+                    purchase_date: purchaseDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addAssetModal'));
+                    modal.hide();
+                    
+                    // Reload portfolio
+                    loadPortfolio();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not add asset'));
+                }
+            })
+            .catch(error => {
+                console.error('Error adding asset:', error);
+                alert('Error adding asset. Please try again.');
+            });
+        }
+        
+        // Show modal to edit asset
+        function showEditAssetModal(itemId) {
+            // Find item in portfolio data
+            const item = portfolioData.items.find(item => item.id === parseInt(itemId));
+            
+            if (!item) {
+                console.error('Item not found:', itemId);
+                return;
+            }
+            
+            // Populate form
+            document.getElementById('editItemId').value = item.id;
+            document.getElementById('editSymbol').value = item.symbol;
+            document.getElementById('editQuantity').value = item.quantity;
+            document.getElementById('editPurchasePrice').value = item.purchase_price;
+            document.getElementById('editPurchaseDate').value = item.purchase_date;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editAssetModal'));
+            modal.show();
+        }
+        
+        // Update existing asset
+        function updateAsset() {
+            const itemId = document.getElementById('editItemId').value;
+            const quantity = parseFloat(document.getElementById('editQuantity').value);
+            const purchasePrice = parseFloat(document.getElementById('editPurchasePrice').value);
+            const purchaseDate = document.getElementById('editPurchaseDate').value;
+            
+            if (!quantity || !purchasePrice || !purchaseDate) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            fetch(`/api/portfolio/update/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    quantity: quantity,
+                    purchase_price: purchasePrice,
+                    purchase_date: purchaseDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editAssetModal'));
+                    modal.hide();
+                    
+                    // Reload portfolio
+                    loadPortfolio();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not update asset'));
+                }
+            })
+            .catch(error => {
+                console.error('Error updating asset:', error);
+                alert('Error updating asset. Please try again.');
+            });
+        }
+        
+        // Show confirmation modal for deleting asset
+        function showDeleteConfirmModal(itemId, symbol) {
+            document.getElementById('deleteAssetSymbol').textContent = symbol;
+            document.getElementById('confirmDelete').setAttribute('data-item-id', itemId);
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        }
+        
+        // Delete asset from portfolio
+        function deleteAsset(itemId) {
+            fetch(`/api/portfolio/delete/${itemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                    modal.hide();
+                    
+                    // Reload portfolio
+                    loadPortfolio();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not delete asset'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting asset:', error);
+                alert('Error deleting asset. Please try again.');
+            });
+        }
+        
+        // Handle WebSocket price updates
+        socket.on('price_update', function(data) {
+            // Only update if we have portfolio data
+            if (!portfolioData || !portfolioData.items) return;
+            
+            // Extract symbol from the update
+            const symbol = data.symbol.endsWith('USDT') ? data.symbol.slice(0, -4) : data.symbol;
+            
+            // Find if we have this asset in our portfolio
+            const portfolioItem = portfolioData.items.find(item => item.symbol === symbol);
+            
+            if (portfolioItem) {
+                // Update the current price in our local data
+                portfolioItem.current_price = parseFloat(data.price);
+                
+                // Recalculate values
+                portfolioItem.current_value = portfolioItem.quantity * portfolioItem.current_price;
+                portfolioItem.profit_loss = portfolioItem.current_value - (portfolioItem.quantity * portfolioItem.purchase_price);
+                portfolioItem.profit_loss_percent = (portfolioItem.profit_loss / (portfolioItem.quantity * portfolioItem.purchase_price)) * 100;
+                
+                // Update the table row for this asset
+                const tableRows = document.querySelectorAll('#portfolioTableBody tr');
+                tableRows.forEach(row => {
+                    const rowSymbol = row.querySelector('td:nth-child(1) strong')?.textContent;
+                    if (rowSymbol === symbol) {
+                        // Format numbers
+                        const formatCurrency = new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        
+                        const formatCurrencyDetail = new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 6
+                        });
+                        
+                        const formatPercent = new Intl.NumberFormat('en-US', {
+                            style: 'percent',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        
+                        // Update price cell
+                        const priceCell = row.querySelector('td:nth-child(4)');
+                        priceCell.textContent = formatCurrencyDetail.format(portfolioItem.current_price);
+                        
+                        // Update value cell
+                        const valueCell = row.querySelector('td:nth-child(5)');
+                        valueCell.textContent = formatCurrency.format(portfolioItem.current_value);
+                        
+                        // Update profit/loss cell
+                        const plCell = row.querySelector('td:nth-child(6)');
+                        plCell.className = portfolioItem.profit_loss >= 0 ? 'text-success' : 'text-danger';
+                        plCell.innerHTML = `
+                            ${formatCurrency.format(portfolioItem.profit_loss)}
+                            <small>(${formatPercent.format(portfolioItem.profit_loss_percent / 100)})</small>
+                        `;
+                        
+                        // Highlight the updated cells
+                        [priceCell, valueCell, plCell].forEach(cell => {
+                            cell.classList.add('bg-highlight');
+                            setTimeout(() => {
+                                cell.classList.remove('bg-highlight');
+                            }, 1000);
+                        });
+                    }
+                });
+                
+                // Recalculate totals
+                recalculatePortfolioTotals();
+            }
+        });
+        
+        // Recalculate portfolio totals after price updates
+        function recalculatePortfolioTotals() {
+            if (!portfolioData || !portfolioData.items || portfolioData.items.length === 0) return;
+            
+            // Calculate new totals
+            let totalCurrentValue = 0;
+            let totalInvested = 0;
+            
+            portfolioData.items.forEach(item => {
+                totalCurrentValue += item.current_value;
+                totalInvested += (item.quantity * item.purchase_price);
+            });
+            
+            const totalProfitLoss = totalCurrentValue - totalInvested;
+            const totalProfitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
+            
+            // Update our data object
+            portfolioData.total_current_value = totalCurrentValue;
+            portfolioData.total_invested = totalInvested;
+            portfolioData.total_profit_loss = totalProfitLoss;
+            portfolioData.total_profit_loss_percent = totalProfitLossPercent;
+            
+            // Format numbers
+            const formatCurrency = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            const formatPercent = new Intl.NumberFormat('en-US', {
+                style: 'percent',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Update UI
+            document.getElementById('totalValue').textContent = formatCurrency.format(totalCurrentValue);
+            
+            const totalProfitLossElement = document.getElementById('totalProfitLoss');
+            totalProfitLossElement.textContent = formatCurrency.format(totalProfitLoss);
+            totalProfitLossElement.className = totalProfitLoss >= 0 ? 'text-success' : 'text-danger';
+            
+            const totalProfitLossPercentElement = document.getElementById('totalProfitLossPercent');
+            totalProfitLossPercentElement.textContent = formatPercent.format(totalProfitLossPercent / 100);
+            totalProfitLossPercentElement.className = 'badge ' + (totalProfitLossPercent >= 0 ? 'bg-success' : 'bg-danger');
+            
+            // Update charts
+            updateAllocationChart(portfolioData.items);
+            updatePerformanceChart(portfolioData.items);
+        }
+    });
+</script>
+{% endblock %}
+
