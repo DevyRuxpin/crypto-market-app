@@ -1,64 +1,832 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard - Crypto Market{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Cryptocurrency Dashboard</h1>
-    
-    <div class="mb-4">
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="pairFilter" id="allPairs" value="all" checked>
-            <label class="form-check-label" for="allPairs">All Pairs</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="pairFilter" id="usdtPairs" value="usdt">
-            <label class="form-check-label" for="usdtPairs">USDT Pairs</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="pairFilter" id="btcPairs" value="btc">
-            <label class="form-check-label" for="btcPairs">BTC Pairs</label>
-        </div>
-    </div>
-    
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="input-group">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search cryptocurrencies...">
-                <button class="btn btn-outline-secondary" type="button" id="searchButton">
-                    <i class="fas fa-search"></i>
-                </button>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Market Overview</h2>
+                <div id="globalMetrics" class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>Total Market Cap</h5>
+                            <h3 id="totalMarketCap">\$0</h3>
+                            <span id="marketCapChange" class="badge"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>24h Volume</h5>
+                            <h3 id="total24hVolume">\$0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>BTC Dominance</h5>
+                            <h3 id="btcDominance">0%</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 border rounded">
+                            <h5>Active Cryptocurrencies</h5>
+                            <h3 id="activeCryptos">0</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-6 text-md-end">
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-outline-primary" id="sortByName">Sort by Name</button>
-                <button type="button" class="btn btn-outline-primary" id="sortByPrice">Sort by Price</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Top Cryptocurrencies</h4>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-view="major">Major</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-view="all">All</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="cryptoTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Price</th>
+                                <th scope="col">24h Change</th>
+                                <th scope="col">Market Cap</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cryptoTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div id="loading-indicator" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Portfolio Summary</h4>
+            </div>
+            <div class="card-body">
+                <div id="portfolioSummary">
+                    <div class="text-center" id="portfolioEmpty">
+                        <p>You don't have any assets in your portfolio yet.</p>
+                        <a href="{{ url_for('portfolio') }}" class="btn btn-primary">Add Assets</a>
+                    </div>
+                    <div id="portfolioContent" style="display: none;">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Total Value:</span>
+                            <strong id="portfolioTotalValue">\$0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>24h Change:</span>
+                            <span id="portfolio24hChange">\$0.00 (0.00%)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Total Profit/Loss:</span>
+                            <span id="portfolioProfitLoss">\$0.00 (0.00%)</span>
+                        </div>
+                        <hr>
+                        <h5>Top Holdings</h5>
+                        <ul class="list-group list-group-flush" id="topHoldings">
+                            <!-- Top holdings will be populated here -->
+                        </ul>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('portfolio') }}" class="btn btn-outline-primary btn-sm">View Full Portfolio</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <p class="mt-2">Loading cryptocurrencies...</p>
-    </div>
-    
-    <div id="error-message" class="alert alert-danger d-none" role="alert">
-        Error loading cryptocurrency data. Please try again later.
-    </div>
-    
-    <div id="crypto-list" class="row">
-        <!-- Cryptocurrencies will be loaded here via JavaScript -->
-    </div>
-    
-    <div id="no-results" class="text-center py-5 d-none">
-        <p>No cryptocurrencies found matching your search criteria.</p>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Price Alerts</h4>
+            </div>
+            <div class="card-body">
+                <div id="alertsSummary">
+                    <div class="text-center" id="alertsEmpty">
+                        <p>You don't have any price alerts set.</p>
+                        <a href="{{ url_for('alerts') }}" class="btn btn-primary">Set Alerts</a>
+                    </div>
+                    <div id="alertsContent" style="display: none;">
+                        <div class="list-group" id="recentAlerts">
+                            <!-- Alerts will be populated here -->
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('alerts') }}" class="btn btn-outline-primary btn-sm">Manage All Alerts</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Socket.IO for real-time updates
+        const socket = io();
+        
+        // Global variables
+        let cryptoData = [];
+        let currentView = 'major'; // 'major' or 'all'
+        
+        // Initialize data
+        fetchGlobalMetrics();
+        fetchCryptoData();
+        fetchPortfolioSummary();
+        fetchAlertsSummary();
+        
+        // Set up interval updates (every 60 seconds)
+        setInterval(fetchGlobalMetrics, 60000);
+        setInterval(fetchCryptoData, 60000);
+        
+        // View toggle buttons
+        document.querySelectorAll('[data-view]').forEach(button => {
+            button.addEventListener('click', function() {
+                const view = this.getAttribute('data-view');
+                currentView = view;
+                
+                // Update active button
+                document.querySelectorAll('[data-view]').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-secondary');
+                });
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-primary');
+                
+                // Refresh table with current view
+                updateCryptoTable();
+            });
+        });
+        
+        // Fetch global market metrics from CoinMarketCap
+        function fetchGlobalMetrics() {
+            fetch('/api/coinmarketcap/global-metrics')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error fetching global metrics:', data.error);
+                        return;
+                    }
+                    
+                    const quote = data.quote?.USD || {};
+                    
+                    // Format numbers
+                    const formatCurrency = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        notation: 'compact',
+                        maximumFractionDigits: 2
+                    });
+                    
+                    const formatPercent = new Intl.NumberFormat('en-US', {
+                        style: 'percent', minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    // Update UI
+                    document.getElementById('totalMarketCap').textContent = formatCurrency.format(quote.total_market_cap || 0);
+                    document.getElementById('total24hVolume').textContent = formatCurrency.format(quote.total_volume_24h || 0);
+                    document.getElementById('btcDominance').textContent = formatPercent.format((data.btc_dominance || 0) / 100);
+                    document.getElementById('activeCryptos').textContent = data.active_cryptocurrencies || 0;
+                    
+                    // Set market cap change with color
+                    const marketCapChange = document.getElementById('marketCapChange');
+                    const changePercent = quote.total_market_cap_yesterday_percentage_change || 0;
+                    marketCapChange.textContent = formatPercent.format(changePercent / 100);
+                    marketCapChange.className = 'badge ' + (changePercent >= 0 ? 'bg-success' : 'bg-danger');
+                })
+                .catch(error => {
+                    console.error('Error fetching global metrics:', error);
+                });
+        }
+        
+        // Fetch cryptocurrency data
+        function fetchCryptoData() {
+            // First try CoinMarketCap API
+            fetch('/api/coinmarketcap/listings')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        // Fall back to Binance API if CoinMarketCap fails
+                        return fetch('/api/prices');
+                    }
+                    
+                    // Process CoinMarketCap data
+                    const processed = data.map(coin => {
+                        const quote = coin.quote?.USD || {};
+                        return {
+                            id: coin.id,
+                            symbol: coin.symbol,
+                            name: coin.name,
+                            price: quote.price || 0,
+                            percent_change_24h: quote.percent_change_24h || 0,
+                            market_cap: quote.market_cap || 0,
+                            volume_24h: quote.volume_24h || 0,
+                            source: 'cmc'
+                        };
+                    });
+                    
+                    cryptoData = processed;
+                    updateCryptoTable();
+                    return null; // Don't need to fetch Binance data
+                })
+                .catch(error => {
+                    console.error('Error fetching CoinMarketCap data:', error);
+                    // Fall back to Binance API
+                    return fetch('/api/prices');
+                })
+                .then(response => {
+                    if (response) return response.json();
+                    return null;
+                })
+                .then(data => {
+                    if (!data) return; // Skip if we already have data from CoinMarketCap
+                    
+                    // Process Binance data
+                    const processed = data.map(coin => {
+                        const symbol = coin.symbol;
+                        const baseSymbol = symbol.endsWith('USDT') ? symbol.slice(0, -4) : symbol;
+                        
+                        return {
+                            symbol: baseSymbol,
+                            name: baseSymbol,
+                            price: parseFloat(coin.price),
+                            percent_change_24h: 0, // Binance ticker doesn't include this directly
+                            source: 'binance'
+                        };
+                    });
+                    
+                    cryptoData = processed;
+                    updateCryptoTable();
+                    
+                    // Subscribe to WebSocket updates for these symbols
+                    cryptoData.forEach(coin => {
+                        socket.emit('join', { symbol: coin.symbol + 'USDT' });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching cryptocurrency data:', error);
+                });
+        }
+        
+        // Update crypto table based on current view
+        function updateCryptoTable() {
+            const tableBody = document.getElementById('cryptoTableBody');
+            tableBody.innerHTML = '';
+            
+            let displayData = cryptoData;
+            
+            // Filter for major view if needed
+            if (currentView === 'major') {
+                const majorCoins = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'DOGE', 'AVAX', 'MATIC'];
+                displayData = cryptoData.filter(coin => majorCoins.includes(coin.symbol));
+            }
+            
+            // Format numbers
+            const formatCurrency = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            });
+            
+            const formatMarketCap = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                notation: 'compact',
+                maximumFractionDigits: 2
+            });
+            
+            const formatPercent = new Intl.NumberFormat('en-US', {
+                style: 'percent',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Display data in table
+            displayData.forEach((coin, index) => {
+                const row = document.createElement('tr');
+                
+                // Calculate price precision based on price value
+                let pricePrecision = 2;
+                if (coin.price < 1) pricePrecision = 6;
+                else if (coin.price < 10) pricePrecision = 4;
+                
+                const priceFormatted = formatCurrency.format(coin.price);
+                const marketCapFormatted = coin.market_cap ? formatMarketCap.format(coin.market_cap) : 'N/A';
+                const changePercent = coin.percent_change_24h / 100;
+                const changeClass = changePercent >= 0 ? 'text-success' : 'text-danger';
+                const changeIcon = changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down';
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>
+                        <a href="/crypto/${coin.symbol}" class="text-decoration-none">
+                            <strong>${coin.symbol}</strong>
+                            <small class="text-muted">${coin.name !== coin.symbol ? coin.name : ''}</small>
+                        </a>
+                    </td>
+                    <td>${priceFormatted}</td>
+                    <td class="${changeClass}">
+                        <i class="fas ${changeIcon}"></i>
+                        ${formatPercent.format(changePercent)}
+                    </td>
+                    <td>${marketCapFormatted}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary add-to-portfolio" data-symbol="${coin.symbol}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn btn-outline-warning add-alert" data-symbol="${coin.symbol}" data-price="${coin.price}">
+                                <i class="fas fa-bell"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners for action buttons
+            document.querySelectorAll('.add-to-portfolio').forEach(button => {
+                button.addEventListener('click', function() {
+                    const symbol = this.getAttribute('data-symbol');
+                    showAddToPortfolioModal(symbol);
+                });
+            });
+            
+            document.querySelectorAll('.add-alert').forEach(button => {
+                button.addEventListener('click', function() {
+                    const symbol = this.getAttribute('data-symbol');
+                    const price = parseFloat(this.getAttribute('data-price'));
+                    showAddAlertModal(symbol, price);
+                });
+            });
+        }
+        
+        // Fetch portfolio summary
+        function fetchPortfolioSummary() {
+            fetch('/api/portfolio')
+                .then(response => response.json())
+                .then(data => {
+                    const portfolioEmpty = document.getElementById('portfolioEmpty');
+                    const portfolioContent = document.getElementById('portfolioContent');
+                    
+                    if (!data.items || data.items.length === 0) {
+                        portfolioEmpty.style.display = 'block';
+                        portfolioContent.style.display = 'none';
+                        return;
+                    }
+                    
+                    portfolioEmpty.style.display = 'none';
+                    portfolioContent.style.display = 'block';
+                    
+                    // Format numbers
+                    const formatCurrency = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    const formatPercent = new Intl.NumberFormat('en-US', {
+                        style: 'percent',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    // Update UI
+                    document.getElementById('portfolioTotalValue').textContent = formatCurrency.format(data.total_current_value || 0);
+                    
+                    const profitLoss = data.total_profit_loss || 0;
+                    const profitLossPercent = data.total_profit_loss_percent || 0;
+                    const profitLossElement = document.getElementById('portfolioProfitLoss');
+                    profitLossElement.textContent = `${formatCurrency.format(profitLoss)} (${formatPercent.format(profitLossPercent / 100)})`;
+                    profitLossElement.className = profitLoss >= 0 ? 'text-success' : 'text-danger';
+                    
+                    // Populate top holdings (up to 3)
+                    const topHoldings = document.getElementById('topHoldings');
+                    topHoldings.innerHTML = '';
+                    
+                    // Sort by current value
+                    const sortedItems = [...data.items].sort((a, b) => b.current_value - a.current_value);
+                    const topItems = sortedItems.slice(0, 3);
+                    
+                    topItems.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        
+                        const profitLossClass = item.profit_loss >= 0 ? 'text-success' : 'text-danger';
+                        
+                        li.innerHTML = `
+                            <div>
+                                <strong>${item.symbol}</strong>
+                                <span class="badge bg-secondary ms-2">${item.quantity}</span>
+                            </div>
+                            <div class="text-end">
+                                <div>${formatCurrency.format(item.current_value)}</div>
+                                <small class="${profitLossClass}">${formatPercent.format(item.profit_loss_percent / 100)}</small>
+                            </div>
+                        `;
+                        
+                        topHoldings.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching portfolio summary:', error);
+                });
+        }
+        
+        // Fetch alerts summary
+        function fetchAlertsSummary() {
+            fetch('/api/alerts')
+                .then(response => response.json())
+                .then(alerts => {
+                    const alertsEmpty = document.getElementById('alertsEmpty');
+                    const alertsContent = document.getElementById('alertsContent');
+                    const recentAlerts = document.getElementById('recentAlerts');
+                    
+                    if (!alerts || alerts.length === 0) {
+                        alertsEmpty.style.display = 'block';
+                        alertsContent.style.display = 'none';
+                        return;
+                    }
+                    
+                    alertsEmpty.style.display = 'none';
+                    alertsContent.style.display = 'block';
+                    
+                    // Clear existing alerts
+                    recentAlerts.innerHTML = '';
+                    
+                    // Format numbers
+                    const formatCurrency = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 6
+                    });
+                    
+                    // Sort by triggered status (triggered first) then by created date
+                    const sortedAlerts = [...alerts].sort((a, b) => {
+                        if (a.triggered !== b.triggered) return b.triggered ? 1 : -1;
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
+                    
+                    // Show up to 5 most recent alerts
+                    const recentItems = sortedAlerts.slice(0, 5);
+                    
+                    recentItems.forEach(alert => {
+                        const alertItem = document.createElement('a');
+                        alertItem.href = '#';
+                        alertItem.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                        
+                        if (alert.triggered) {
+                            alertItem.classList.add('list-group-item-warning');
+                        }
+                        
+                        const direction = alert.alert_type === 'above' ? 'rises above' : 'falls below';
+                        
+                        alertItem.innerHTML = `
+                            <div>
+                                <div>
+                                    <strong>${alert.symbol}</strong> ${direction}
+                                    <span class="badge bg-secondary">${formatCurrency.format(alert.target_price)}</span>
+                                </div>
+                                <small class="text-muted">${alert.triggered ? 'Triggered' : 'Active'}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger delete-alert" data-alert-id="${alert.id}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        recentAlerts.appendChild(alertItem);
+                    });
+                    
+                    // Add event listeners for delete buttons
+                    document.querySelectorAll('.delete-alert').forEach(button => {
+                        button.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const alertId = this.getAttribute('data-alert-id');
+                            deleteAlert(alertId);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching alerts summary:', error);
+                });
+        }
+        
+        // Delete alert
+        function deleteAlert(alertId) {
+            fetch(`/api/alerts/delete/${alertId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchAlertsSummary();
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting alert:', error);
+            });
+        }
+        
+        // Show modal to add to portfolio
+        function showAddToPortfolioModal(symbol) {
+            // Create modal dynamically
+            const modalId = 'addToPortfolioModal';
+            let modal = document.getElementById(modalId);
+            
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.setAttribute('aria-labelledby', `${modalId}Label`);
+                modal.setAttribute('aria-hidden', 'true');
+                
+                modal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="${modalId}Label">Add to Portfolio</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addToPortfolioForm">
+                                    <div class="mb-3">
+                                        <label for="symbol" class="form-label">Symbol</label>
+                                        <input type="text" class="form-control" id="portfolioSymbol" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="quantity" class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" id="portfolioQuantity" step="0.000001" min="0" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="purchasePrice" class="form-label">Purchase Price (USD)</label>
+                                        <input type="number" class="form-control" id="portfolioPurchasePrice" step="0.000001" min="0" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="purchaseDate" class="form-label">Purchase Date</label>
+                                        <input type="date" class="form-control" id="portfolioPurchaseDate" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="saveToPortfolio">Add to Portfolio</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add event listener for form submission
+                document.getElementById('saveToPortfolio').addEventListener('click', function() {
+                    const symbol = document.getElementById('portfolioSymbol').value;
+                    const quantity = parseFloat(document.getElementById('portfolioQuantity').value);
+                    const purchasePrice = parseFloat(document.getElementById('portfolioPurchasePrice').value);
+                    const purchaseDate = document.getElementById('portfolioPurchaseDate').value;
+                    
+                    if (!quantity || !purchasePrice || !purchaseDate) {
+                        alert('Please fill in all fields');
+                        return;
+                    }
+                    
+                    addToPortfolio(symbol, quantity, purchasePrice, purchaseDate);
+                    
+                    // Close the modal
+                    const bsModal = bootstrap.Modal.getInstance(modal);
+                    bsModal.hide();
+                });
+            }
+            
+            // Set symbol and current price if available
+            document.getElementById('portfolioSymbol').value = symbol;
+            
+            const coin = cryptoData.find(c => c.symbol === symbol);
+            if (coin) {
+                document.getElementById('portfolioPurchasePrice').value = coin.price;
+            }
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('portfolioPurchaseDate').value = today;
+            
+            // Show the modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        }
+        
+        // Add to portfolio
+        function addToPortfolio(symbol, quantity, purchasePrice, purchaseDate) {
+            fetch('/api/portfolio/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbol: symbol,
+                    quantity: quantity,
+                    purchase_price: purchasePrice,
+                    purchase_date: purchaseDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchPortfolioSummary();
+                    alert('Added to portfolio successfully!');
+                } else {
+                    alert('Error: ' + (data.message || 'Could not add to portfolio'));
+                }
+            })
+            .catch(error => {
+                console.error('Error adding to portfolio:', error);
+                alert('Error adding to portfolio. Please try again.');
+            });
+        }
+        
+        // Show modal to add alert
+        function showAddAlertModal(symbol, currentPrice) {
+            // Create modal dynamically
+            const modalId = 'addAlertModal';
+            let modal = document.getElementById(modalId);
+            
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.setAttribute('aria-labelledby', `${modalId}Label`);
+                modal.setAttribute('aria-hidden', 'true');
+                
+                modal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="${modalId}Label">Set Price Alert</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addAlertForm">
+                                    <div class="mb-3">
+                                        <label for="alertSymbol" class="form-label">Symbol</label>
+                                        <input type="text" class="form-control" id="alertSymbol" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="currentPrice" class="form-label">Current Price (USD)</label>
+                                        <input type="text" class="form-control" id="alertCurrentPrice" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="alertType" class="form-label">Alert Type</label>
+                                        <select class="form-select" id="alertType" required>
+                                            <option value="above">Price rises above</option>
+                                            <option value="below">Price falls below</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="targetPrice" class="form-label">Target Price (USD)</label>
+                                        <input type="number" class="form-control" id="alertTargetPrice" step="0.000001" min="0" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="saveAlert">Set Alert</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add event listener for form submission
+                document.getElementById('saveAlert').addEventListener('click', function() {
+                    const symbol = document.getElementById('alertSymbol').value;
+                    const alertType = document.getElementById('alertType').value;
+                    const targetPrice = parseFloat(document.getElementById('alertTargetPrice').value);
+                    
+                    if (!targetPrice) {
+                        alert('Please enter a target price');
+                        return;
+                    }
+                    
+                    addAlert(symbol, alertType, targetPrice);
+                    
+                    // Close the modal
+                    const bsModal = bootstrap.Modal.getInstance(modal);
+                    bsModal.hide();
+                });
+            }
+            
+            // Set symbol and current price
+            document.getElementById('alertSymbol').value = symbol;
+            
+            // Format the current price
+            const formatCurrency = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            });
+            document.getElementById('alertCurrentPrice').value = formatCurrency.format(currentPrice);
+            
+            // Set default target price slightly above current price
+            document.getElementById('alertTargetPrice').value = (currentPrice * 1.05).toFixed(6);
+            
+            // Show the modal
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        }
+        
+        // Add alert
+        function addAlert(symbol, alertType, targetPrice) {
+            fetch('/api/alerts/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbol: symbol,
+                    alert_type: alertType,
+                    target_price: targetPrice
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchAlertsSummary();
+                    alert('Price alert set successfully!');
+                } else {
+                    alert('Error: ' + (data.message || 'Could not set alert'));
+                }
+            })
+            .catch(error => {
+                console.error('Error setting alert:', error);
+                alert('Error setting price alert. Please try again.');
+            });
+        }
+        
+        // Handle WebSocket price updates
+        socket.on('price_update', function(data) {
+            // Find the crypto in our data and update it
+            const symbol = data.symbol.endsWith('USDT') ? data.symbol.slice(0, -4) : data.symbol;
+            
+            for (let i = 0; i < cryptoData.length; i++) {
+                if (cryptoData[i].symbol === symbol) {
+                    // Update price
+                    cryptoData[i].price = parseFloat(data.price);
+                    
+                    // Update table if this symbol is currently displayed
+                    const tableRows = document.querySelectorAll('#cryptoTableBody tr');
+                    tableRows.forEach(row => {
+                        const rowSymbol = row.querySelector('td:nth-child(2) strong')?.textContent;
+                        if (rowSymbol === symbol) {
+                            const priceCell = row.querySelector('td:nth-child(3)');
+                            
+                            // Format the price
+                            const formatCurrency = new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: 'USD',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 6
+                            });
+                            
+                            priceCell.textContent = formatCurrency.format(parseFloat(data.price));
+                            
+                            // Flash the cell to indicate update
+                            priceCell.classList.add('bg-highlight');
+                            setTimeout(() => {
+                                priceCell.classList.remove('bg-highlight');
+                            }, 1000);
+                        }
+                    });
+                    
+                    break;
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
+
