@@ -13,22 +13,22 @@ import uuid
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
-# Import models and database after app creation but before init_app
-from models import db
-# Import models after db to avoid circular imports
-from models.user import User
-from models.portfolio import Portfolio, PortfolioItem
-from models.alert import Alert
-from models.watchlist import Watchlist, WatchlistSymbol
-
 # Fix PostgreSQL connection string if needed (for Render)
 database_url = app.config.get('SQLALCHEMY_DATABASE_URI')
 if database_url and database_url.startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
 
+# Import models and database
+from models import db
 # Initialize SQLAlchemy
 db.init_app(app)
 migrate = Migrate(app, db)
+
+# Import models after db initialization to avoid circular imports
+from models.user import User
+from models.portfolio import Portfolio, PortfolioItem
+from models.alert import Alert
+from models.watchlist import Watchlist, WatchlistSymbol
 
 # Import services
 from services.binance_service import BinanceService
