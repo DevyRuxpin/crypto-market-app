@@ -1,9 +1,6 @@
-# models/portfolio.py
-from flask_sqlalchemy import SQLAlchemy
+from . import db  # Import db from __init__.py
 from datetime import datetime
 import uuid
-
-db = SQLAlchemy()
 
 class Portfolio(db.Model):
     __tablename__ = 'portfolios'
