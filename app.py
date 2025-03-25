@@ -380,5 +380,158 @@ def get_alerts():
                 if (alert.alert_type == 'above' and current_price >= alert.target_price) or \
                    (alert.alert_type == 'below' and current_price <= alert.target_price):
                     alert.triggered = True
-                    alert.triggered_at = datetime.now().iso
+                    alert.triggered_at = datetime.now().isoformat()
+                    alert.save()
+    
+    return jsonify([alert.to_dict() for alert in alerts])
 
+@app.route('/api/alerts/add', methods=['POST'])
+@login_required
+def add_alert():
+    data = request.json
+    symbol = data.get('symbol', '').upper()
+    alert_type = data.get('alert_type')  # 'above' or 'below'
+    target_price = float(data.get('target_price', 0))
+    
+    if not symbol or not alert_type or target_price <= 0:
+        return jsonify({"error": "Invalid input data"}), 400
+    
+    user_id = current_user.id
+    
+    alert = Alert(
+        user_id=user_id,
+        symbol=symbol,
+        alert_type=alert_type,
+        target_price=target_price,
+        created_at=datetime.now().isoformat(),
+        triggered=False
+    )
+    
+    alert.save()
+    
+    return jsonify({"success": True, "message": "Alert added successfully", "alert": alert.to_dict()})
+
+@app.route('/api/alerts/delete/<alert_id>', methods=['DELETE'])
+@login_required
+def delete_alert(alert_id):
+    user_id = current_user.id
+    success = Alert.delete(alert_id, user_id)
+    
+    if not success:
+        return jsonify({"error": "Alert not found"}), 404
+    
+    return jsonify({"success": True, "message": "Alert deleted successfully"})
+
+@app.route('/api/alerts/reset/<alert_id>', methods=['PUT'])
+@login_required
+def reset_alert(alert_id):
+    user_id = current_user.id
+    success = Alert.reset(alert_id, user_id)
+    
+    if not success:
+        return jsonify({"error": "Alert not found"}), 404
+    
+    return jsonify({"success": True, "message": "Alert reset successfully"})
+
+# CoinMarketCap API endpoints
+@app.route('/api/coinmarketcap/listings')
+@login_required
+def get_cmc_listings():
+    limit = int(request.args.get('limit', '20'))
+    sort = request.args.get('sort', 'market_cap')
+    sort_dir = request.args.get('sort_dir', 'desc')
+    
+    try:
+        data = coinmarketcap_service.get_latest_listings(limit=limit, sort=sort, sort_dir=sort_dir)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error in CoinMarketCap API: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/coinmarketcap/info')
+@login_required
+def get_cmc_info():
+    symbol = request.args.get('symbol', 'BTC')
+    
+    try:
+        data = coinmarketcap_service.get_metadata(symbol)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error in CoinMarketCap API: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/coinmarketcap/quotes')
+@login_required
+def get_cmc_quotes():
+    symbol = request.args.get('symbol', 'BTC')
+    
+    try:
+        data = coinmarketcap_service.get_quotes(symbol)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error in CoinMarketCap API: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/coinmarketcap/global-metrics')
+def get_cmc_global_metrics():
+    try:
+        data = coinmarketcap_service.get_global_metrics()
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error in CoinMarketCap API: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# User settings
+@app.route('/api/settings', methods=['GET'])
+@login_required
+def get_settings():
+    user_id = current_user.id
+    settings = current_user.settings
+    
+    return jsonify(settings)
+
+@app.route('/api/settings', methods=['PUT'])
+@login_required
+def update_settings():
+    user_id = current_user.id
+    data = request.json
+    
+    # Update user settings
+    current_user.update_settings(data)
+    
+    return jsonify({"success": True, "message": "Settings updated successfully", "settings": current_user.settings})
+
+# WebSocket events
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join')
+def handle_join(data):
+    room = data['symbol']
+    join_room(room)
+    print(f'Client joined room: {room}')
+    
+    # Start streaming for this symbol if not already
+    ws_service.subscribe_symbol(room)
+
+@socketio.on('leave')
+def handle_leave(data):
+    room = data['symbol']
+    leave_room(room)
+    print(f'Client left room: {room}')
+    
+    # Check if room is empty and stop streaming if needed
+    if not ws_service.has_clients(room):
+        ws_service.unsubscribe_symbol(room)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+else:
+    # For production with Gunicorn
+    application = socketio.server
