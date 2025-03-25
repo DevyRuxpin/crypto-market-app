@@ -1,34 +1,175 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Sign Up{% endblock %}
+{% block title %}Sign Up - Crypto Market{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="auth-form">
-        <h2>Create an Account</h2>
-        <form method="POST">
-            <div class="mb-3">
-                <label for="name" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="name" name="name" required>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">Create an Account</h2>
+                
+                <form method="POST" action="{{ url_for('signup') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        {{ form.username(class="form-control", id="username", placeholder="Choose a username") }}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.username.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        {{ form.email(class="form-control", id="email", placeholder="Enter your email") }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        {{ form.password(class="form-control", id="password", placeholder="Create a password") }}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Password must be at least 8 characters and include a mix of letters, numbers, and symbols.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        {{ form.confirm_password(class="form-control", id="confirm_password", placeholder="Confirm your password") }}
+                        {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.confirm_password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.accept_terms(class="form-check-input", id="accept_terms") }}
+                        <label class="form-check-label" for="accept_terms">
+                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                        </label>
+                        {% if form.accept_terms.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.accept_terms.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p>Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none">Login</a></p>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+    </div>
+</div>
+
+<!-- Terms of Service Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms of Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+            <div class="modal-body">
+                <h4>1. Acceptance of Terms</h4>
+                <p>By accessing or using the Crypto Market service, you agree to be bound by these Terms of Service.</p>
+                
+                <h4>2. Description of Service</h4>
+                <p>Crypto Market provides real-time cryptocurrency price tracking, portfolio management, and price alert services.</p>
+                
+                <h4>3. User Accounts</h4>
+                <p>To access certain features of the Service, you must register for an account. You agree to provide accurate information and keep it updated.</p>
+                
+                <h4>4. User Responsibilities</h4>
+                <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
+                
+                <h4>5. Data and Privacy</h4>
+                <p>Our collection and use of personal information is governed by our Privacy Policy.</p>
+                
+                <h4>6. Disclaimer of Warranties</h4>
+                <p>The service is provided "as is" without warranties of any kind, either express or implied.</p>
+                
+                <h4>7. Limitation of Liability</h4>
+                <p>Crypto Market shall not be liable for any indirect, incidental, special, consequential or punitive damages.</p>
+                
+                <h4>8. Changes to Terms</h4>
+                <p>We reserve the right to modify these Terms at any time. Your continued use of the Service constitutes acceptance of the modified Terms.</p>
             </div>
-            <div class="mb-3">
-                <label for="confirm_password" class="form-label">Confirm Password</label>
-                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary">Sign Up</button>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </form>
-        <hr>
-        <p class="text-center">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+            <div class="modal-body">
+                <h4>1. Information We Collect</h4>
+                <p>We collect information you provide when you create an account, including your email address, username, and password.</p>
+                
+                <h4>2. How We Use Your Information</h4>
+                <p>We use your information to provide, maintain, and improve our services, communicate with you, and ensure security.</p>
+                
+                <h4>3. Information Sharing</h4>
+                <p>We do not sell, trade, or otherwise transfer your personal information to outside parties except as described in this policy.</p>
+                
+                <h4>4. Data Security</h4>
+                <p>We implement a variety of security measures to maintain the safety of your personal information.</p>
+                
+                <h4>5. Cookies</h4>
+                <p>We use cookies to enhance your experience, analyze usage, and assist in our marketing efforts.</p>
+                
+                <h4>6. Third-Party Links</h4>
+                <p>Our service may contain links to third-party websites. We are not responsible for the privacy practices of such websites.</p>
+                
+                <h4>7. Changes to Privacy Policy</h4>
+                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
+                
+                <h4>8. Contact Us</h4>
+                <p>If you have any questions about this Privacy Policy, please contact us.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+
