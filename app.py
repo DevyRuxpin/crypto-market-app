@@ -5,7 +5,6 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_migrate import Migrate
 import uuid
 
@@ -24,7 +23,7 @@ from models import db
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# Import models after db initialization to avoid circular imports
+# Import models after db initialization
 from models.user import User
 from models.portfolio import Portfolio, PortfolioItem
 from models.alert import Alert
@@ -33,16 +32,23 @@ from models.watchlist import Watchlist, WatchlistSymbol
 # Import services
 from services.binance_service import BinanceService
 from services.coinmarketcap_service import CoinMarketCapService
-from services.websocket_service import WebSocketService
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Initialize Flask-SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
-ws_service = WebSocketService(socketio)
+# Initialize Flask-SocketIO conditionally
+# Only import and initialize SocketIO when needed (not during app startup in production)
+if os.environ.get('FLASK_ENV') == 'development':
+    from flask_socketio import SocketIO, emit, join_room, leave_room
+    from services.websocket_service import WebSocketService
+    socketio = SocketIO(app, cors_allowed_origins="*")
+    ws_service = WebSocketService(socketio)
+else:
+    # In production, we'll use gunicorn without socketio for the main app
+    socketio = None
+    ws_service = None
 
 # Initialize services
 COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY', '')
@@ -652,4 +658,10 @@ def handle_price_unsubscribe(data):
         print(f"User unsubscribed from price updates for {symbol}")
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0')
+    if os.environ.get('FLASK_ENV') == 'development' and socketio:
+        # In development, use socketio.run
+        socketio.run(app, debug=True, host='0.0.0.0')
+    else:
+        # In production, use regular app.run (gunicorn will handle this)
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port)
