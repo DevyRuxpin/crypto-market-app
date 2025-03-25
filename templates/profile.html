@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Crypto Market{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Your Profile</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Account Information</h4>
+            </div>
+            <div class="card-body">
+                <form id="profileForm" method="POST" action="{{ url_for('profile') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3 row">
+                        <label for="username" class="col-sm-3 col-form-label">Username</label>
+                        <div class="col-sm-9">
+                            {{ form.username(class="form-control", id="username") }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row">
+                        <label for="email" class="col-sm-3 col-form-label">Email</label>
+                        <div class="col-sm-9">
+                            {{ form.email(class="form-control", id="email") }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row">
+                        <div class="col-sm-9 offset-sm-3">
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Change Password</h4>
+            </div>
+            <div class="card-body">
+                <form id="passwordForm" method="POST" action="{{ url_for('change_password') }}">
+                    {{ password_form.hidden_tag() }}
+                    
+                    <div class="mb-3 row">
+                        <label for="current_password" class="col-sm-3 col-form-label">Current Password</label>
+                        <div class="col-sm-9">
+                            {{ password_form.current_password(class="form-control", id="current_password") }}
+                            {% if password_form.current_password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in password_form.current_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row">
+                        <label for="new_password" class="col-sm-3 col-form-label">New Password</label>
+                        <div class="col-sm-9">
+                            {{ password_form.new_password(class="form-control", id="new_password") }}
+                            {% if password_form.new_password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in password_form.new_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Password must be at least 8 characters and include a mix of letters, numbers, and symbols.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row">
+                        <label for="confirm_password" class="col-sm-3 col-form-label">Confirm New Password</label>
+                        <div class="col-sm-9">
+                            {{ password_form.confirm_password(class="form-control", id="confirm_password") }}
+                            {% if password_form.confirm_password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in password_form.confirm_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row">
+                        <div class="col-sm-9 offset-sm-3">
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Account Settings</h4>
+            </div>
+            <div class="card-body">
+                <h5>Notification Preferences</h5>
+                <form id="notificationForm" method="POST" action="{{ url_for('update_notifications') }}">
+                    {{ notification_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ notification_form.email_alerts(class="form-check-input", id="email_alerts") }}
+                            <label class="form-check-label" for="email_alerts">
+                                Email Price Alerts
+                            </label>
+                        </div>
+                        <div class="form-text text-muted">
+                            Receive email notifications when your price alerts are triggered.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ notification_form.browser_alerts(class="form-check-input", id="browser_alerts") }}
+                            <label class="form-check-label" for="browser_alerts">
+                                Browser Notifications
+                            </label>
+                        </div>
+                        <div class="form-text text-muted">
+                            Receive browser notifications when your price alerts are triggered.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Save Preferences</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <h5>Time Zone</h5>
+                <form id="timezoneForm" method="POST" action="{{ url_for('update_timezone') }}">
+                    {{ timezone_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="timezone" class="form-label">Select Time Zone</label>
+                        {{ timezone_form.timezone(class="form-select", id="timezone") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Save Time Zone</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <h5>Account Security</h5>
+                <div class="mb-3">
+                    <a href="{{ url_for('two_factor_setup') }}" class="btn btn-outline-secondary">
+                        {% if current_user.two_factor_enabled %}
+                            Manage Two-Factor Authentication
+                        {% else %}
+                            Enable Two-Factor Authentication
+                        {% endif %}
+                    </a>
+                </div>
+                
+                <hr>
+                
+                <h5 class="text-danger">Danger Zone</h5>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">Delete Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                <p>All your data, including portfolio and alerts, will be permanently deleted.</p>
+                
+                <form id="deleteAccountForm" method="POST" action="{{ url_for('delete_account') }}">
+                    {{ delete_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="password_confirm" class="form-label">Confirm your password to continue</label>
+                        {{ delete_form.password(class="form-control", id="password_confirm") }}
+                        {% if delete_form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in delete_form.password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        {{ delete_form.confirm(class="form-check-input", id="confirm_delete") }}
+                        <label class="form-check-label" for="confirm_delete">
+                            I understand this action is permanent
+                        </label>
+                        {% if delete_form.confirm.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in delete_form.confirm.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteAccount">Delete Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle browser notification permission
+        const browserAlertsCheckbox = document.getElementById('browser_alerts');
+        if (browserAlertsCheckbox) {
+            browserAlertsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    requestNotificationPermission();
+                }
+            });
+        }
+        
+        // Request browser notification permission
+        function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                alert('This browser does not support desktop notifications');
+                if (browserAlertsCheckbox) browserAlertsCheckbox.checked = false;
+                return;
+            }
+            
+            if (Notification.permission === 'granted') {
+                return;
+            }
+            
+            if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== 'granted') {
+                        alert('Browser notifications require permission');
+                        if (browserAlertsCheckbox) browserAlertsCheckbox.checked = false;
+                    }
+                });
+            } else {
+                alert('Browser notifications were previously denied. Please enable them in your browser settings.');
+                if (browserAlertsCheckbox) browserAlertsCheckbox.checked = false;
+            }
+        }
+        
+        // Handle delete account form submission
+        document.getElementById('confirmDeleteAccount').addEventListener('click', function() {
+            const form = document.getElementById('deleteAccountForm');
+            
+            // Basic validation
+            const password = document.getElementById('password_confirm').value;
+            const confirmCheckbox = document.getElementById('confirm_delete').checked;
+            
+            if (!password) {
+                alert('Please enter your password to confirm deletion');
+                return;
+            }
+            
+            if (!confirmCheckbox) {
+                alert('Please confirm that you understand this action is permanent');
+                return;
+            }
+            
+            // Submit the form
+            form.submit();
+        });
+    });
+</script>
+{% endblock %}
+
