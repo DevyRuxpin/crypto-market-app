@@ -1,8 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from . import db  # Import db from __init__.py
 from datetime import datetime
 import uuid
-
-db = SQLAlchemy()
 
 class Alert(db.Model):
     __tablename__ = 'alerts'
@@ -57,3 +55,4 @@ class Alert(db.Model):
             'triggered': self.triggered,
             'triggered_at': self.triggered_at.isoformat() if self.triggered_at else None
         }
+
