@@ -627,35 +627,35 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-# WebSocket event handlers
-@socketio.on('connect')
-def handle_connect():
-    if current_user.is_authenticated:
-        join_room(f'user_{current_user.id}')
-        print(f"User {current_user.id} connected to WebSocket")
-    else:
-        print("Anonymous user connected to WebSocket")
+if socketio is not None:
+    @socketio.on('connect')
+    def handle_connect():
+        if current_user.is_authenticated:
+            join_room(f'user_{current_user.id}')
+            print(f"User {current_user.id} connected to WebSocket")
+        else:
+            print("Anonymous user connected to WebSocket")
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    if current_user.is_authenticated:
-        print(f"User {current_user.id} disconnected from WebSocket")
-    else:
-        print("Anonymous user disconnected from WebSocket")
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        if current_user.is_authenticated:
+            print(f"User {current_user.id} disconnected from WebSocket")
+        else:
+            print("Anonymous user disconnected from WebSocket")
 
-@socketio.on('subscribe_price')
-def handle_price_subscribe(data):
-    symbol = data.get('symbol')
-    if symbol:
-        join_room(f'price_{symbol}')
-        print(f"User subscribed to price updates for {symbol}")
+    @socketio.on('subscribe_price')
+    def handle_price_subscribe(data):
+        symbol = data.get('symbol')
+        if symbol:
+            join_room(f'price_{symbol}')
+            print(f"User subscribed to price updates for {symbol}")
 
-@socketio.on('unsubscribe_price')
-def handle_price_unsubscribe(data):
-    symbol = data.get('symbol')
-    if symbol:
-        leave_room(f'price_{symbol}')
-        print(f"User unsubscribed from price updates for {symbol}")
+    @socketio.on('unsubscribe_price')
+    def handle_price_unsubscribe(data):
+        symbol = data.get('symbol')
+        if symbol:
+            leave_room(f'price_{symbol}')
+            print(f"User unsubscribed from price updates for {symbol}")
 
 if __name__ == '__main__':
     if os.environ.get('FLASK_ENV') == 'development' and socketio:
