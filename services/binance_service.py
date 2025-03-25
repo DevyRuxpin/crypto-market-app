@@ -1,3 +1,4 @@
+# services/binance_service.py
 import requests
 import time
 import hmac
@@ -8,7 +9,8 @@ import os
 class BinanceService:
     """Service for interacting with the Binance API"""
     
-    BASE_URL = 'https://api.binance.com'
+    # Updated URL to use the public data API endpoint
+    BASE_URL = 'https://data-api.binance.vision'
     
     @staticmethod
     def get_ticker_prices():
@@ -108,6 +110,7 @@ class BinanceService:
             print(f"Error getting market depth for {symbol}: {e}")
             return None
     
+    # Technical analysis functions remain the same
     @staticmethod
     def calculate_rsi(prices, period=14):
         """Calculate Relative Strength Index (RSI)"""
@@ -155,4 +158,3 @@ class BinanceService:
             ema = (price - ema) * multiplier + ema
             
         return ema
-
