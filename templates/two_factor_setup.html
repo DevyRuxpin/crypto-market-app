@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Two-Factor Authentication - Crypto Market{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">Two-Factor Authentication</h2>
+                
+                {% if not current_user.two_factor_enabled %}
+                    <div class="alert alert-info">
+                        <h5>Enhance Your Account Security</h5>
+                        <p>Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password when you log in.</p>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <p>Scan this QR code with your authenticator app:</p>
+                            <img src="{{ qr_code }}" alt="QR Code" class="img-fluid border p-2">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p>Or enter this code manually into your app:</p>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control text-center" value="{{ secret_key }}" readonly>
+                                <button class="btn btn-outline-secondary" type="button" id="copySecretKey">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('two_factor_setup') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label for="verification_code" class="form-label">Enter the 6-digit code from your authenticator app</label>
+                            {{ form.verification_code(class="form-control", id="verification_code", placeholder="Enter code") }}
+                            {% if form.verification_code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.verification_code.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Verify and Enable</button>
+                            <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-success mb-4">
+                        <h5><i class="fas fa-check-circle me-2"></i> Two-Factor Authentication is Enabled</h5>
+                        <p>Your account is protected with an additional layer of security.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Recovery Codes</h5>
+                        <p>These codes can be used to access your account if you lose your device. Keep them in a safe place.</p>
+                        
+                        {% if recovery_codes %}
+                            <div class="bg-light p-3 border rounded mb-3">
+                                <div class="row">
+                                    {% for code in recovery_codes %}
+                                        <div class="col-md-6 mb-2">
+                                            <code>{{ code }}</code>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary" id="printRecoveryCodes">
+                                    <i class="fas fa-print me-1"></i> Print
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="copyRecoveryCodes">
+                                    <i class="fas fa-copy me-1"></i> Copy All
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="downloadRecoveryCodes">
+                                    <i class="fas fa-download me-1"></i> Download
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#disableTwoFactorModal">
+                            Disable Two-Factor Authentication
+                        </button>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Back to Profile</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Disable 2FA Modal -->
+<div class="modal fade" id="disableTwoFactorModal" tabindex="-1" aria-labelledby="disableTwoFactorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="disableTwoFactorModalLabel">Disable Two-Factor Authentication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <p><i class="fas fa-exclamation-triangle me-2"></i> Warning: This will reduce the security of your account.</p>
+                    <p>Without two-factor authentication, you will only need your password to access your account.</p>
+                </div>
+                
+                <form id="disableTwoFactorForm" method="POST" action="{{ url_for('disable_two_factor') }}">
+                    {{ disable_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Confirm your password to continue</label>
+                        {{ disable_form.password(class="form-control", id="password") }}
+                        {% if disable_form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in disable_form.password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDisableTwoFactor">Disable</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Copy secret key to clipboard
+        const copySecretKey = document.getElementById('copySecretKey');
+        if (copySecretKey) {
+            copySecretKey.addEventListener('click', function() {
+                const secretKeyInput = this.previousElementSibling;
+                secretKeyInput.select();
+                document.execCommand('copy');
+                
+                // Show tooltip or feedback
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+        
+        // Print recovery codes
+        const printRecoveryCodes = document.getElementById('printRecoveryCodes');
+        if (printRecoveryCodes) {
+            printRecoveryCodes.addEventListener('click', function() {
+                const codes = document.querySelectorAll('code');
+                let codesText = 'Recovery Codes for Crypto Market:\n\n';
+                
+                codes.forEach(code => {
+                    codesText += code.textContent + '\n';
+                });
+                
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Recovery Codes - Crypto Market</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                h1 { font-size: 18px; }
+                                .code { font-family: monospace; margin: 5px 0; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Recovery Codes - Crypto Market</h1>
+                            <p>Keep these codes in a safe place. Each code can only be used once.</p>
+                            <div>
+                                ${Array.from(codes).map(code => `<div class="code">${code.textContent}</div>`).join('')}
+                            </div>
+                        </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            });
+        }
+        
+        // Copy all recovery codes
+        const copyRecoveryCodes = document.getElementById('copyRecoveryCodes');
+        if (copyRecoveryCodes) {
+            copyRecoveryCodes.addEventListener('click', function() {
+                const codes = document.querySelectorAll('code');
+                let codesText = '';
+                
+                codes.forEach(code => {
+                    codesText += code.textContent + '\n';
+                });
+                
+                // Create a temporary textarea element
+                const textarea = document.createElement('textarea');
+                textarea.value = codesText;
+                document.body.appendChild(textarea);
+                
+                // Copy the text
+                textarea.select();
+                document.execCommand('copy');
+                
+                // Remove the textarea
+                document.body.removeChild(textarea);
+                
+                // Show tooltip or feedback
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+        
+        // Download recovery codes
+        const downloadRecoveryCodes = document.getElementById('downloadRecoveryCodes');
+        if (downloadRecoveryCodes) {
+            downloadRecoveryCodes.addEventListener('click', function() {
+                const codes = document.querySelectorAll('code');
+                let codesText = 'Recovery Codes for Crypto Market:\n\n';
+                
+                codes.forEach(code => {
+                    codesText += code.textContent + '\n';
+                });
+                
+                // Create a download link
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(codesText));
+                element.setAttribute('download', 'crypto-market-recovery-codes.txt');
+                
+                // Hide the element
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                
+                // Click the link
+                element.click();
+                
+                // Remove the element
+                document.body.removeChild(element);
+            });
+        }
+        
+        // Confirm disable 2FA
+        const confirmDisableTwoFactor = document.getElementById('confirmDisableTwoFactor');
+        if (confirmDisableTwoFactor) {
+            confirmDisableTwoFactor.addEventListener('click', function() {
+                const form = document.getElementById('disableTwoFactorForm');
+                
+                // Basic validation
+                const password = document.getElementById('password').value;
+                
+                if (!password) {
+                    alert('Please enter your password to confirm');
+                    return;
+                }
+                
+                // Submit the form
+                form.submit();
+            });
+        }
+    });
+</script>
+{% endblock %}
