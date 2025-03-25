@@ -4,7 +4,7 @@ services:
     env: python
     runtime: python3
     buildCommand: pip install -r requirements.txt
-    # Change this line to remove eventlet worker class
+    # Remove eventlet worker class and point to wsgi.py
     startCommand: gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
     healthCheckPath: /health
     envVars:
@@ -49,9 +49,6 @@ services:
         value: false
       - key: SESSION_USE_SIGNER
         value: true
-      # Add this environment variable to control WebSocket initialization
-      - key: USE_WEBSOCKETS
-        value: false
 
   # Worker for background tasks (optional - if you need background processing)
   - type: worker
@@ -94,8 +91,6 @@ services:
         sync: false
       - key: MAIL_DEFAULT_SENDER
         value: noreply@cryptomarket.example.com
-      - key: USE_WEBSOCKETS
-        value: false
 
   # Redis instance for caching and session management
   - type: redis
