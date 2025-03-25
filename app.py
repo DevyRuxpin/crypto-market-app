@@ -33,6 +33,11 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(user_id)
 
+# Template context processor
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now()}
+
 # Routes
 @app.route('/')
 def index():
