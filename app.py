@@ -39,8 +39,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 ws_service = WebSocketService(socketio)
 
 # Initialize services
-coinmarketcap_api_key = os.environ.get('CMC_API_KEY', '')
-coinmarketcap_service = CoinMarketCapService(api_key=coinmarketcap_api_key)
+COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY', '')
+COINMARKETCAP_API_URL = os.environ.get('COINMARKETCAP_API_URL', 'https://pro-api.coinmarketcap.com/v1')
 
 # User loader for Flask-Login
 @login_manager.user_loader
