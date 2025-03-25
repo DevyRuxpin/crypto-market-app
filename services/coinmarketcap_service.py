@@ -1,116 +1,66 @@
 import os
 import requests
-import time
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from requests import Session
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
+import json
 
 class CoinMarketCapService:
-    """Service for interacting with the CoinMarketCap API"""
+    def __init__(self, api_key=None):
+        self.api_key = api_key or os.environ.get('CMC_API_KEY')
+        self.base_url = 'https://pro-api.coinmarketcap.com/v1'
+        self.session = Session()
+        self.session.headers.update({
+            'X-CMC_PRO_API_KEY': self.api_key,
+            'Accept': 'application/json',
+        })
     
-    BASE_URL = "https://pro-api.coinmarketcap.com"
-    API_KEY = os.environ.get("CMC_API_KEY", "bda79d78-5f5c-41c3-892e-3584b698e234")
-    
-    @classmethod
-    def _make_request(cls, endpoint, params=None):
-        """Make a request to the CoinMarketCap API with proper headers"""
-        headers = {
-            'X-CMC_PRO_API_KEY': cls.API_KEY,
-            'Accept': 'application/json'
-        }
-        
-        url = f"{cls.BASE_URL}{endpoint}"
+    def _make_request(self, endpoint, params=None):
+        """Make a request to the CoinMarketCap API"""
+        url = f"{self.base_url}/{endpoint}"
         
         try:
-            response = requests.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error making request to CoinMarketCap API: {e}")
-            return None
+            response = self.session.get(url, params=params)
+            data = json.loads(response.text)
+            
+            if response.status_code != 200:
+                error_msg = data.get('status', {}).get('error_message', 'Unknown error')
+                raise Exception(f"API Error: {error_msg}")
+                
+            return data.get('data', {})
+            
+        except (ConnectionError, Timeout, TooManyRedirects, Exception) as e:
+            print(f"Error making request to {endpoint}: {e}")
+            raise
     
-    @classmethod
-    def get_top_cryptocurrencies(cls, limit=100, convert="USD"):
-        """Get top cryptocurrencies by market cap"""
-        endpoint = "/v1/cryptocurrency/listings/latest"
+    def get_latest_listings(self, limit=20, sort='market_cap', sort_dir='desc'):
+        """Get latest cryptocurrency listings"""
         params = {
-            'limit': limit,
-            'convert': convert,
-            'sort': 'market_cap',
-            'sort_dir': 'desc'
+            'start': '1',
+            'limit': str(limit),
+            'sort': sort,
+            'sort_dir': sort_dir,
+            'convert': 'USD'
         }
         
-        data = cls._make_request(endpoint, params)
-        if data and 'data' in data:
-            return data['data']
-        return []
+        return self._make_request('cryptocurrency/listings/latest', params)
     
-    @classmethod
-    def get_cryptocurrency_details(cls, symbol=None, id=None, convert="USD"):
-        """Get detailed information about a specific cryptocurrency"""
-        endpoint = "/v2/cryptocurrency/quotes/latest"
-        params = {'convert': convert}
-        
-        if symbol:
-            params['symbol'] = symbol
-        elif id:
-            params['id'] = id
-        else:
-            return None
-        
-        data = cls._make_request(endpoint, params)
-        if data and 'data' in data:
-            return data['data']
-        return None
-    
-    @classmethod
-    def get_cryptocurrency_map(cls):
-        """Get a map of all cryptocurrencies (ID, name, symbol)"""
-        endpoint = "/v1/cryptocurrency/map"
-        
-        data = cls._make_request(endpoint)
-        if data and 'data' in data:
-            return data['data']
-        return []
-    
-    @classmethod
-    def get_price_conversion(cls, amount, symbol, convert="USD"):
-        """Convert an amount of one cryptocurrency to another currency"""
-        endpoint = "/v2/tools/price-conversion"
+    def get_metadata(self, symbol):
+        """Get metadata for a cryptocurrency"""
         params = {
-            'amount': amount,
+            'symbol': symbol
+        }
+        
+        return self._make_request('cryptocurrency/info', params)
+    
+    def get_quotes(self, symbol):
+        """Get latest quotes for a cryptocurrency"""
+        params = {
             'symbol': symbol,
-            'convert': convert
+            'convert': 'USD'
         }
         
-        data = cls._make_request(endpoint, params)
-        if data and 'data' in data:
-            return data['data']
-        return None
+        return self._make_request('cryptocurrency/quotes/latest', params)
     
-    @classmethod
-    def get_global_metrics(cls, convert="USD"):
+    def get_global_metrics(self):
         """Get global cryptocurrency market metrics"""
-        endpoint = "/v1/global-metrics/quotes/latest"
-        params = {'convert': convert}
-        
-        data = cls._make_request(endpoint, params)
-        if data and 'data' in data:
-            return data['data']
-        return None
-    
-    @classmethod
-    def get_historical_data(cls, id, time_period="7d", convert="USD"):
-        """Get historical data for a cryptocurrency"""
-        endpoint = f"/v2/cryptocurrency/quotes/historical"
-        params = {
-            'id': id,
-            'time_period': time_period,
-            'convert': convert
-        }
-        
-        data = cls._make_request(endpoint, params)
-        if data and 'data' in data:
-            return data['data']
-        return None
+        return self._make_request('global-metrics/quotes/latest')
