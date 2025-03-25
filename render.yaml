@@ -5,6 +5,7 @@ services:
     runtime: python3
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:$PORT app:app
+    healthCheckPath: /health
     envVars:
       - key: FLASK_SECRET_KEY
         generateValue: true
@@ -14,3 +15,94 @@ services:
         value: https://data-api.binance.vision
       - key: BINANCE_WS_BASE_URL
         value: wss://data-stream.binance.vision
+      - key: COINMARKETCAP_API_KEY
+        sync: false
+      - key: COINMARKETCAP_API_URL
+        value: https://pro-api.coinmarketcap.com/v1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crypto-market-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: crypto-market-redis
+          type: redis
+          property: connectionString
+      - key: MAIL_SERVER
+        value: smtp.sendgrid.net
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: true
+      - key: MAIL_USERNAME
+        value: apikey
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        value: noreply@cryptomarket.example.com
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: SESSION_TYPE
+        value: redis
+      - key: SESSION_PERMANENT
+        value: false
+      - key: SESSION_USE_SIGNER
+        value: true
+
+  # Worker for background tasks (optional - if you need background processing)
+  - type: worker
+    name: crypto-market-worker
+    env: python
+    runtime: python3
+    buildCommand: pip install -r requirements.txt
+    startCommand: python worker.py
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: BINANCE_API_BASE_URL
+        value: https://data-api.binance.vision
+      - key: BINANCE_WS_BASE_URL
+        value: wss://data-stream.binance.vision
+      - key: COINMARKETCAP_API_KEY
+        sync: false
+      - key: COINMARKETCAP_API_URL
+        value: https://pro-api.coinmarketcap.com/v1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crypto-market-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: crypto-market-redis
+          type: redis
+          property: connectionString
+      - key: MAIL_SERVER
+        value: smtp.sendgrid.net
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: true
+      - key: MAIL_USERNAME
+        value: apikey
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        value: noreply@cryptomarket.example.com
+
+# Redis instance for caching and session management
+  - type: redis
+    name: crypto-market-redis
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free
+
+# PostgreSQL database
+databases:
+  - name: crypto-market-db
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
