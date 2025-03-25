@@ -9,25 +9,31 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_migrate import Migrate
 import uuid
 
-# Import models and database
+# Initialize Flask app
+app = Flask(__name__)
+app.config.from_object('config.Config')
+
+# Import models and database after app creation but before init_app
 from models import db
+# Import models after db to avoid circular imports
 from models.user import User
 from models.portfolio import Portfolio, PortfolioItem
 from models.alert import Alert
 from models.watchlist import Watchlist, WatchlistSymbol
 
-# Import services
-from services.binance_service import BinanceService
-from services.coinmarketcap_service import CoinMarketCapService
-from services.websocket_service import WebSocketService
-
-# Initialize Flask app
-app = Flask(__name__)
-app.config.from_object('config.Config')
+# Fix PostgreSQL connection string if needed (for Render)
+database_url = app.config.get('SQLALCHEMY_DATABASE_URI')
+if database_url and database_url.startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
 
 # Initialize SQLAlchemy
 db.init_app(app)
 migrate = Migrate(app, db)
+
+# Import services
+from services.binance_service import BinanceService
+from services.coinmarketcap_service import CoinMarketCapService
+from services.websocket_service import WebSocketService
 
 # Initialize Flask-Login
 login_manager = LoginManager()
