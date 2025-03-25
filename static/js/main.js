@@ -1,115 +1,199 @@
-// Global JavaScript functions and utilities
-
-// Format currency with appropriate precision
-function formatCurrency(value, currency = 'USD') {
-    const num = parseFloat(value);
-    
-    if (isNaN(num)) {
-        return 'N/A';
-    }
-    
-    // Format based on magnitude
-    let options;
-    if (num >= 1000) {
-        options = { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 };
-    } else if (num >= 1) {
-        options = { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 4 };
-    } else if (num >= 0.01) {
-        options = { style: 'currency', currency, minimumFractionDigits: 4, maximumFractionDigits: 6 };
-    } else {
-        options = { style: 'currency', currency, minimumFractionDigits: 6, maximumFractionDigits: 8 };
-    }
-    
-    return new Intl.NumberFormat('en-US', options).format(num);
-}
-
-// Format percentage values
-function formatPercent(value) {
-    const num = parseFloat(value);
-    
-    if (isNaN(num)) {
-        return 'N/A';
-    }
-    
-    return new Intl.NumberFormat('en-US', { 
-        style: 'percent', 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2,
-        signDisplay: 'exceptZero'
-    }).format(num / 100);
-}
-
-// Format large numbers with K, M, B suffixes
-function formatNumber(value) {
-    const num = parseFloat(value);
-    
-    if (isNaN(num)) {
-        return 'N/A';
-    }
-    
-    if (num >= 1000000000) {
-        return (num / 1000000000).toFixed(2) + 'B';
-    } else if (num >= 1000000) {
-        return (num / 1000000).toFixed(2) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(2) + 'K';
-    } else {
-        return num.toFixed(2);
-    }
-}
-
-// Detect price direction for styling
-function getPriceChangeClass(change) {
-    const num = parseFloat(change);
-    
-    if (isNaN(num)) {
-        return '';
-    }
-    
-    return num > 0 ? 'price-up' : num < 0 ? 'price-down' : '';
-}
-
-// Handle API errors
-function handleApiError(error, elementId) {
-    console.error('API Error:', error);
-    
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `
-            <div class="alert alert-danger">
-                <h4 class="alert-heading">Error!</h4>
-                <p>There was a problem loading data: ${error.message}</p>
-                <hr>
-                <p class="mb-0">Please try again later or contact support if the problem persists.</p>
-            </div>
-        `;
-    }
-}
-
-// Add event listener for dark mode toggle if it exists
+// static/js/main.js
 document.addEventListener('DOMContentLoaded', function() {
-    const darkModeToggle = document.getElementById('darkModeToggle');
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
     if (darkModeToggle) {
-        // Check for saved theme preference or use device preference
-        const savedTheme = localStorage.getItem('theme') || 
-            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        darkModeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
             
-        // Apply saved theme
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            darkModeToggle.checked = true;
-        }
-        
-        // Add toggle event listener
-        darkModeToggle.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('theme', 'light');
+            // Save preference via API if user is logged in
+            if (isUserLoggedIn()) {
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                updateUserSettings({ theme: isDarkMode ? 'dark' : 'light' });
             }
         });
     }
+    
+    // Initialize Socket.IO if available
+    initializeSocketIO();
 });
+
+// Check if user is logged in
+function isUserLoggedIn() {
+    // This is a simple check - you might want to use a more robust method
+    return document.querySelector('.navbar .dropdown-toggle[id="userDropdown"]') !== null;
+}
+
+// Update user settings
+function updateUserSettings(settings) {
+    fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Settings updated successfully:', data);
+    })
+    .catch(error => {
+        console.error('Error updating settings:', error);
+        showToast('Error', 'Failed to update settings. Please try again.', 'danger');
+    });
+}
+
+// Initialize Socket.IO
+function initializeSocketIO() {
+    // Check if Socket.IO is loaded
+    if (typeof io !== 'undefined') {
+        // Connect to the Socket.IO server
+        const socket = io();
+        
+        // Store socket in window for global access
+        window.cryptoSocket = socket;
+        
+        // Connection event handlers
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from WebSocket server');
+        });
+        
+        // Set up price update handlers
+        socket.on('price_update', (data) => {
+            handlePriceUpdate(data);
+        });
+    }
+}
+
+// Handle price updates from WebSocket
+function handlePriceUpdate(data) {
+    const symbol = data.symbol;
+    const price = parseFloat(data.price);
+    
+    // Update price displays for this symbol
+    const priceElements = document.querySelectorAll(`.crypto-price[data-symbol="${symbol}"]`);
+    priceElements.forEach(element => {
+        // Store previous price for color animation
+        const prevPrice = parseFloat(element.dataset.price || '0');
+        
+        // Update price
+        element.textContent = formatCurrency(price);
+        element.dataset.price = price;
+        
+        // Add color animation based on price change
+        if (price > prevPrice) {
+            element.classList.remove('price-down');
+            element.classList.add('price-up');
+        } else if (price < prevPrice) {
+            element.classList.remove('price-up');
+            element.classList.add('price-down');
+        }
+        
+        // Remove animation classes after animation completes
+        setTimeout(() => {
+            element.classList.remove('price-up', 'price-down');
+        }, 1000);
+    });
+    
+    // Update charts if available
+    const priceChart = window.priceChart;
+    if (priceChart && priceChart.symbol === symbol) {
+        // Add new price point to chart
+        const now = new Date();
+        priceChart.data.labels.push(formatTime(now));
+        priceChart.data.datasets[0].data.push(price);
+        
+        // Remove oldest data point if we have more than 100
+        if (priceChart.data.labels.length > 100) {
+            priceChart.data.labels.shift();
+            priceChart.data.datasets[0].data.shift();
+        }
+        
+        priceChart.update();
+    }
+}
+
+// Subscribe to price updates for a symbol
+function subscribeToPriceUpdates(symbol) {
+    if (window.cryptoSocket) {
+        window.cryptoSocket.emit('subscribe_price', { symbol: symbol });
+    }
+}
+
+// Unsubscribe from price updates for a symbol
+function unsubscribeFromPriceUpdates(symbol) {
+    if (window.cryptoSocket) {
+        window.cryptoSocket.emit('unsubscribe_price', { symbol: symbol });
+    }
+}
+
+// Format currency values
+function formatCurrency(value) {
+    if (value >= 1000) {
+        return '$' + value.toFixed(2);
+    } else if (value >= 1) {
+        return '$' + value.toFixed(4);
+    } else if (value >= 0.01) {
+        return '$' + value.toFixed(6);
+    } else {
+        return '$' + value.toFixed(8);
+    }
+}
+
+// Format time for charts
+function formatTime(date) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Show toast notification
+function showToast(title, message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+    
+    const toastId = 'toast-' + Date.now();
+    const toast = document.createElement('div');
+    toast.className = `toast bg-${type} text-white`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.setAttribute('id', toastId);
+    
+    toast.innerHTML = `
+        <div class="toast-header bg-${type} text-white">
+            <strong class="me-auto">${title}</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            ${message}
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Initialize and show the toast
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 5000
+    });
+    bsToast.show();
+    
+    // Remove from DOM after hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
