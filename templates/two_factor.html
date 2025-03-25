@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Two-Factor Authentication - Crypto Market{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">Verification Required</h2>
+                
+                <p class="text-center mb-4">Please enter the 6-digit code from your authenticator app to complete the login.</p>
+                
+                <form method="POST" action="{{ url_for('two_factor') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <label for="code" class="form-label">Authentication Code</label>
+                        {{ form.code(class="form-control", id="code", placeholder="Enter 6-digit code") }}
+                        {% if form.code.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.code.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Verify</button>
+                    </div>
+                </form>
+                
+                <div class="mt-3 text-center">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#recoveryCodeModal" class="text-decoration-none">
+                        Lost access to your authenticator app?
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recovery Code Modal -->
+<div class="modal fade" id="recoveryCodeModal" tabindex="-1" aria-labelledby="recoveryCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recoveryCodeModalLabel">Use Recovery Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>If you've lost access to your authenticator app, you can use one of your recovery codes to sign in.</p>
+                
+                <form method="POST" action="{{ url_for('recovery_code') }}">
+                    {{ recovery_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="recovery_code" class="form-label">Recovery Code</label>
+                        {{ recovery_form.recovery_code(class="form-control", id="recovery_code", placeholder="Enter recovery code") }}
+                        {% if recovery_form.recovery_code.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in recovery_form.recovery_code.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-text mb-3">
+                        <i class="fas fa-info-circle me-1"></i> Each recovery code can only be used once.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Verify Recovery Code</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
