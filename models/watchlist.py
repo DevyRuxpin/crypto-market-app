@@ -1,63 +1,76 @@
-import uuid
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import uuid
 
-class Watchlist:
-    """Model for cryptocurrency watchlists"""
+db = SQLAlchemy()
+
+class Watchlist(db.Model):
+    __tablename__ = 'watchlists'
     
-    # In-memory storage for watchlists
-    watchlists = {}
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False, default="Default Watchlist")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def __init__(self, user_id, name="Default Watchlist"):
-        self.id = str(uuid.uuid4())
-        self.user_id = user_id
-        self.name = name
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
-        self.symbols = []  # List of cryptocurrency symbols in the watchlist
-        
-        # Save to in-memory storage
-        if user_id not in Watchlist.watchlists:
-            Watchlist.watchlists[user_id] = []
-        Watchlist.watchlists[user_id].append(self)
+    # Relationships
+    user = db.relationship('User', back_populates='watchlists')
+    symbols = db.relationship('WatchlistSymbol', back_populates='watchlist', cascade='all, delete-orphan')
     
-    @staticmethod
-    def get_user_watchlists(user_id):
-        """Get all watchlists for a user"""
-        return Watchlist.watchlists.get(user_id, [])
+    @classmethod
+    def get_user_watchlists(cls, user_id):
+        return cls.query.filter_by(user_id=user_id).all()
     
-    @staticmethod
-    def get_watchlist(watchlist_id):
-        """Get a specific watchlist by ID"""
-        for user_watchlists in Watchlist.watchlists.values():
-            for watchlist in user_watchlists:
-                if watchlist.id == watchlist_id:
-                    return watchlist
-        return None
+    @classmethod
+    def get_watchlist(cls, watchlist_id):
+        return cls.query.get(watchlist_id)
     
     def add_symbol(self, symbol):
-        """Add a cryptocurrency symbol to the watchlist"""
-        if symbol not in self.symbols:
-            self.symbols.append(symbol)
-            self.updated_at = datetime.now()
+        # Check if symbol already exists
+        existing = WatchlistSymbol.query.filter_by(
+            watchlist_id=self.id, symbol=symbol).first()
+        
+        if not existing:
+            new_symbol = WatchlistSymbol(watchlist_id=self.id, symbol=symbol)
+            db.session.add(new_symbol)
+            self.updated_at = datetime.utcnow()
+            db.session.commit()
             return True
         return False
     
     def remove_symbol(self, symbol):
-        """Remove a cryptocurrency symbol from the watchlist"""
-        if symbol in self.symbols:
-            self.symbols.remove(symbol)
-            self.updated_at = datetime.now()
+        symbol_obj = WatchlistSymbol.query.filter_by(
+            watchlist_id=self.id, symbol=symbol).first()
+        
+        if symbol_obj:
+            db.session.delete(symbol_obj)
+            self.updated_at = datetime.utcnow()
+            db.session.commit()
             return True
         return False
     
     def to_dict(self):
-        """Convert watchlist to dictionary"""
         return {
             'id': self.id,
             'user_id': self.user_id,
             'name': self.name,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'symbols': self.symbols,
+            'symbols': [s.symbol for s in self.symbols],
             'count': len(self.symbols)
         }
+
+class WatchlistSymbol(db.Model):
+    __tablename__ = 'watchlist_symbols'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    watchlist_id = db.Column(db.String(36), db.ForeignKey('watchlists.id'), nullable=False)
+    symbol = db.Column(db.String(20), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    watchlist = db.relationship('Watchlist', back_populates='symbols')
+    
+    # Ensure symbol uniqueness within a watchlist
+    __table_args__ = (db.UniqueConstraint('watchlist_id', 'symbol'),)
+
