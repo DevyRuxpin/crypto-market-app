@@ -8,7 +8,8 @@ class CoinMarketCapService:
     BASE_URL = 'https://pro-api.coinmarketcap.com/v1'
     
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.environ.get('CMC_API_KEY', '')
+        # Use the provided API key or get from environment
+        self.api_key = api_key or os.environ.get('CMC_API_KEY', 'bda79d78-5f5c-41c3-892e-3584b698e234')
         self.headers = {
             'X-CMC_PRO_API_KEY': self.api_key,
             'Accept': 'application/json'
