@@ -1,22 +1,47 @@
+# config.py
 import os
 from datetime import timedelta
 
 class Config:
-    # Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-secret-key-for-dev')
-    
-    # SQLAlchemy configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///crypto_market.db')
-    if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://')
+    """Base configuration"""
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SESSION_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
-    # Session configuration
-    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
+    # API Keys
+    BINANCE_API_KEY = os.environ.get('BINANCE_API_KEY')
+    BINANCE_API_SECRET = os.environ.get('BINANCE_API_SECRET')
+    COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY')
     
-    # Binance API configuration
-    BINANCE_API_KEY = os.environ.get('BINANCE_API_KEY', '')
-    BINANCE_API_SECRET = os.environ.get('BINANCE_API_SECRET', '')
-    
-    # CoinMarketCap API configuration
-    CMC_API_KEY = os.environ.get('CMC_API_KEY', '')
+    # Logging
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+
+class DevelopmentConfig(Config):
+    """Development configuration"""
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev_cryptotracker.db')
+    SESSION_COOKIE_SECURE = False
+    REMEMBER_COOKIE_SECURE = False
+
+class TestingConfig(Config):
+    """Testing configuration"""
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///test_cryptotracker.db')
+    SESSION_COOKIE_SECURE = False
+    REMEMBER_COOKIE_SECURE = False
+
+class ProductionConfig(Config):
+    """Production configuration"""
+    DEBUG = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+
+config = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
