@@ -7,6 +7,8 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 import uuid
+from forms import LoginForm  # Ensure you import your form class
+from models import User, db
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -17,52 +19,19 @@ database_url = app.config.get('SQLALCHEMY_DATABASE_URI')
 if database_url and database_url.startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
 
-# Import models and database
-from models import db
 # Initialize SQLAlchemy
 db.init_app(app)
 migrate = Migrate(app, db)
-
-# Import models after db initialization
-from models.user import User
-from models.portfolio import Portfolio, PortfolioItem
-from models.alert import Alert
-from models.watchlist import Watchlist, WatchlistSymbol
-
-# Import services
-from services.binance_service import BinanceService
-from services.coinmarketcap_service import CoinMarketCapService
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Initialize Flask-SocketIO conditionally
-# Only import and initialize SocketIO when needed (not during app startup in production)
-if os.environ.get('FLASK_ENV') == 'development':
-    from flask_socketio import SocketIO, emit, join_room, leave_room
-    from services.websocket_service import WebSocketService
-    socketio = SocketIO(app, cors_allowed_origins="*")
-    ws_service = WebSocketService(socketio)
-else:
-    # In production, we'll use gunicorn without socketio for the main app
-    socketio = None
-    ws_service = None
-
-# Initialize services
-COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY', '')
-COINMARKETCAP_API_URL = os.environ.get('COINMARKETCAP_API_URL', 'https://pro-api.coinmarketcap.com/v1')
-
 # User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
-
-# Template context processor
-@app.context_processor
-def inject_now():
-    return {'now': datetime.now()}
 
 # Routes
 @app.route('/')
@@ -74,25 +43,22 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
         
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        remember = 'remember' in request.form
-        
-        user = User.find_by_email(email)
-        
-        if user and check_password_hash(user.password_hash, password):
-            login_user(user, remember=remember)
+    form = LoginForm()  # Create an instance of your form class
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user, remember=form.remember_me.data)
             user.last_login = datetime.utcnow()
             db.session.commit()
-            
             flash('Login successful!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
         else:
             flash('Invalid email or password', 'danger')
             
-    return render_template('login.html')
+    return render_template('login.html', form=form)  # Pass the form object to the template
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -105,7 +71,7 @@ def signup():
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         
-        if User.find_by_email(email):
+        if User.query.filter_by(email=email).first():
             flash('Email already registered', 'danger')
             return render_template('signup.html')
             
@@ -186,7 +152,7 @@ def get_prices():
             filtered_prices = [p for p in all_prices if p['symbol'].endswith('USDT') and any(p['symbol'].startswith(coin) for coin in major_coins)]
             
             # Sort by market cap (using symbol as proxy for now)
-            filtered_prices.sort(key=lambda x: major_coins.index(next((coin for coin in major_coins if x['symbol'].startswith(coin)), 'ZZZ')) if any(x['symbol'].startswith(coin) for coin in major_coins) else 999)
+            filtered_prices.sort(key=lambda x: major_coins.index(next((coin for coin in major_coins if x['symbol'].startswith(coin)), 'ZZZ')) if any(x['symbol'].startswith(coin) for coin in major_coins) else 'ZZZ')
             
             print(f"Filtered to {len(filtered_prices)} major USD pairs")
             return jsonify(filtered_prices)
@@ -574,7 +540,7 @@ def get_cmc_listings():
     sort_dir = request.args.get('sort_dir', 'desc')
     
     try:
-        data = coinmarketcap_service.get_latest_listings(limit=limit, sort=sort, sort_dir=sort_dir)
+        data = CoinMarketCapService.get_latest_listings(limit=limit, sort=sort, sort_dir=sort_dir)
         return jsonify(data)
     except Exception as e:
         print(f"Error in CoinMarketCap API: {e}")
@@ -586,7 +552,7 @@ def get_cmc_info():
     symbol = request.args.get('symbol', 'BTC')
     
     try:
-        data = coinmarketcap_service.get_metadata(symbol)
+        data = CoinMarketCapService.get_metadata(symbol)
         return jsonify(data)
     except Exception as e:
         print(f"Error in CoinMarketCap API: {e}")
@@ -598,7 +564,7 @@ def get_cmc_quotes():
     symbols = request.args.get('symbols', 'BTC,ETH').split(',')
     
     try:
-        data = coinmarketcap_service.get_quotes(symbols)
+        data = CoinMarketCapService.get_quotes(symbols)
         return jsonify(data)
     except Exception as e:
         print(f"Error in CoinMarketCap API: {e}")
