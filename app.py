@@ -54,12 +54,16 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
         
-    form = LoginForm()  # Create an instance of your form class
+    form = LoginForm()
     if form.validate_on_submit():
-        email = form.email.data
-        password = form.password.data
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            # Check if 2FA is enabled
+            if user.two_factor_enabled:
+                session['user_id'] = user.id  # Store user ID for 2FA verification
+                return redirect(url_for('two_factor'))
+            
+            # No 2FA, proceed with login
             login_user(user, remember=form.remember_me.data)
             user.last_login = datetime.utcnow()
             db.session.commit()
@@ -69,7 +73,7 @@ def login():
         else:
             flash('Invalid email or password', 'danger')
             
-    return render_template('login.html', form=form)  # Pass the form object to the template
+    return render_template('login.html', form=form)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
