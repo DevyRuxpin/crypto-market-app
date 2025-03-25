@@ -12,10 +12,13 @@ services:
       - BINANCE_API_KEY=${BINANCE_API_KEY}
       - BINANCE_API_SECRET=${BINANCE_API_SECRET}
       - CMC_API_KEY=${CMC_API_KEY}
+      - CACHE_TYPE=redis
+      - CACHE_REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
     depends_on:
       - db
+      - redis
     command: >
       sh -c "flask db upgrade &&
              python init_db.py &&
@@ -31,6 +34,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:
