@@ -5,6 +5,10 @@ from .watchlist import Watchlist, WatchlistSymbol
 from .alert import Alert
 
 __all__ = [
-    'User', 'Portfolio', 'PortfolioItem', 
-    'Watchlist', 'WatchlistSymbol', 'Alert'
+    'User',
+    'Portfolio',
+    'PortfolioItem',
+    'Watchlist',
+    'WatchlistSymbol',
+    'Alert'
 ]
