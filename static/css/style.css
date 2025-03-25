@@ -1,394 +1,185 @@
-/* Crypto Market Dashboard - Main Stylesheet */
-
-/* Base Styles */
+/* static/css/style.css */
 :root {
-  --primary-color: #3498db;
-  --secondary-color: #2ecc71;
-  --danger-color: #e74c3c;
-  --warning-color: #f39c12;
-  --info-color: #1abc9c;
-  --light-bg: #f8f9fa;
-  --dark-bg: #343a40;
-  --light-text: #f8f9fa;
-  --dark-text: #343a40;
-  --border-color: #dee2e6;
-  --card-bg: #ffffff;
-  --hover-bg: #f0f0f0;
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --dark-bg: #121212;
+    --dark-card: #1e1e1e;
+    --dark-text: #f5f5f5;
 }
 
 body {
-  font-family: 'Roboto', sans-serif;
-  transition: background-color 0.3s, color 0.3s;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.content {
-  flex: 1;
-}
-
-/* Dark Mode Styles */
+/* Dark Mode */
 body.dark-mode {
-  background-color: var(--dark-bg);
-  color: var(--light-text);
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
 }
 
 body.dark-mode .navbar {
-  background-color: #212529 !important;
+    background-color: var(--dark-bg) !important;
+}
+
+body.dark-mode .navbar-light .navbar-brand,
+body.dark-mode .navbar-light .nav-link {
+    color: var(--dark-text);
 }
 
 body.dark-mode .card {
-  background-color: #2c3034;
-  border-color: #495057;
-  color: var(--light-text);
+    background-color: var(--dark-card);
+    border-color: #333;
 }
 
 body.dark-mode .table {
-  color: var(--light-text);
+    color: var(--dark-text);
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.075);
 }
 
 body.dark-mode .modal-content {
-  background-color: #2c3034;
-  color: var(--light-text);
+    background-color: var(--dark-card);
+    color: var(--dark-text);
 }
 
-body.dark-mode .form-control,
-body.dark-mode .form-select {
-  background-color: #212529;
-  border-color: #495057;
-  color: var(--light-text);
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-body.dark-mode .btn-close {
-  filter: invert(1) grayscale(100%) brightness(200%);
+.navbar .navbar-brand {
+    font-weight: 700;
 }
 
-/* Header & Navigation */
-.navbar-brand {
-  font-weight: 700;
-  font-size: 1.5rem;
+.navbar .nav-icon {
+    margin-right: 5px;
 }
 
-.navbar-brand .logo-icon {
-  color: var(--primary-color);
-  margin-right: 0.5rem;
+.logo-icon {
+    color: var(--primary-color);
+    margin-right: 5px;
 }
 
-.nav-link {
-  font-weight: 500;
+/* Content */
+.content {
+    flex: 1;
 }
 
-.nav-link .nav-icon {
-  margin-right: 0.25rem;
+/* Cards */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Price Table */
-.crypto-table {
-  margin-top: 1.5rem;
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.crypto-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 0.5rem;
-  vertical-align: middle;
+.card-header {
+    font-weight: 600;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
 
+/* Crypto price animations */
 .price-up {
-  animation: price-up 1s;
-  color: var(--secondary-color);
+    animation: priceUp 1s;
+    color: var(--secondary-color);
 }
 
 .price-down {
-  animation: price-down 1s;
-  color: var(--danger-color);
+    animation: priceDown 1s;
+    color: var(--danger-color);
 }
 
-@keyframes price-up {
-  0% { background-color: rgba(46, 204, 113, 0); }
-  50% { background-color: rgba(46, 204, 113, 0.3); }
-  100% { background-color: rgba(46, 204, 113, 0); }
+@keyframes priceUp {
+    0% { background-color: rgba(46, 204, 113, 0.3); }
+    100% { background-color: transparent; }
 }
 
-@keyframes price-down {
-  0% { background-color: rgba(231, 76, 60, 0); }
-  50% { background-color: rgba(231, 76, 60, 0.3); }
-  100% { background-color: rgba(231, 76, 60, 0); }
+@keyframes priceDown {
+    0% { background-color: rgba(231, 76, 60, 0.3); }
+    100% { background-color: transparent; }
 }
 
-/* Dashboard Cards */
-.dashboard-card {
-  height: 100%;
-  transition: transform 0.2s, box-shadow 0.2s;
+/* Tables */
+.table > thead {
+    background-color: rgba(0, 0, 0, 0.03);
 }
 
-.dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.table-hover tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
 }
 
-.card-header-tabs {
-  margin-bottom: -0.75rem;
+/* Crypto symbols */
+.crypto-symbol {
+    display: inline-flex;
+    align-items: center;
 }
 
-/* Charts */
+.crypto-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+}
+
+/* Stats cards */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.stat-card .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.2;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+/* Chart containers */
 .chart-container {
-  position: relative;
-  height: 400px;
-  width: 100%;
-}
-
-.chart-options {
-  margin-bottom: 1rem;
-}
-
-/* Portfolio Section */
-.portfolio-summary {
-  margin-bottom: 2rem;
-}
-
-.portfolio-card {
-  margin-bottom: 1.5rem;
-}
-
-.holding-item {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.holding-item:last-child {
-  border-bottom: none;
-}
-
-.holding-amount {
-  font-weight: 500;
-}
-
-.profit-positive {
-  color: var(--secondary-color);
-}
-
-.profit-negative {
-  color: var(--danger-color);
-}
-
-/* Alerts Section */
-.alerts-container {
-  margin-bottom: 2rem;
-}
-
-.alert-item {
-  padding: 0.75rem;
-  border-left: 4px solid var(--primary-color);
-  margin-bottom: 1rem;
-  background-color: rgba(52, 152, 219, 0.1);
-  border-radius: 0.25rem;
-}
-
-.alert-item.triggered {
-  border-left-color: var(--warning-color);
-  background-color: rgba(243, 156, 18, 0.1);
-}
-
-.alert-item.dismissed {
-  border-left-color: var(--border-color);
-  background-color: rgba(189, 195, 199, 0.1);
-  opacity: 0.7;
-}
-
-/* Watchlist Section */
-.watchlist-container {
-  margin-bottom: 2rem;
-}
-
-.watchlist-symbol {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.watchlist-symbol:last-child {
-  border-bottom: none;
-}
-
-.watchlist-symbol-name {
-  flex: 1;
-  font-weight: 500;
-}
-
-.watchlist-symbol-price {
-  margin: 0 1rem;
-}
-
-/* Search and Filter Components */
-.search-container {
-  margin-bottom: 1.5rem;
-}
-
-.filter-dropdown {
-  min-width: 150px;
-}
-
-/* Toast Notifications */
-.toast-container {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 1050;
-}
-
-/* Loading Spinner */
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
+    position: relative;
+    height: 300px;
+    width: 100%;
 }
 
 /* Footer */
-footer {
-  margin-top: auto;
-  padding: 1.5rem 0;
-  background-color: var(--light-bg);
-  transition: background-color 0.3s, color 0.3s;
+.footer {
+    margin-top: auto;
+    padding: 1.5rem 0;
+    background-color: #f8f9fa;
+    color: #6c757d;
 }
 
-body.dark-mode footer {
-  background-color: #212529;
-  color: var(--light-text);
+body.dark-mode .footer {
+    background-color: var(--dark-bg);
+    color: #adb5bd;
 }
 
-/* Form Elements */
-.form-floating > label {
-  padding-left: 1rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .chart-container {
-    height: 300px;
-  }
-  
-  .dashboard-stats {
-    flex-direction: column;
-  }
-  
-  .stat-card {
-    margin-bottom: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .chart-container {
-    height: 250px;
-  }
-  
-  .navbar-brand {
-    font-size: 1.25rem;
-  }
-  
-  .crypto-table th,
-  .crypto-table td {
-    padding: 0.5rem;
-  }
-}
-
-/* Animations */
-.fade-in {
-  animation: fadeIn 0.5s;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Market Trend Indicators */
-.trend-up {
-  color: var(--secondary-color);
-}
-
-.trend-down {
-  color: var(--danger-color);
-}
-
-.trend-neutral {
-  color: var(--warning-color);
-}
-
-/* Custom Button Styles */
-.btn-crypto-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-}
-
-.btn-crypto-primary:hover {
-  background-color: #2980b9;
-  border-color: #2980b9;
-  color: white;
-}
-
-.btn-crypto-secondary {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
-  color: white;
-}
-
-.btn-crypto-secondary:hover {
-  background-color: #27ae60;
-  border-color: #27ae60;
-  color: white;
-}
-
-/* Tooltip custom styles */
-.tooltip-inner {
-  max-width: 200px;
-  padding: 0.5rem;
-  background-color: var(--dark-bg);
-  border-radius: 0.25rem;
-}
-
-body.dark-mode .tooltip-inner {
-  background-color: var(--light-bg);
-  color: var(--dark-text);
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--light-bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #2980b9;
-}
-
-body.dark-mode ::-webkit-scrollbar-track {
-  background: #212529;
+/* Toast notifications */
+.toast-container {
+    z-index: 1050;
 }
