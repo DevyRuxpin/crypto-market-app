@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchCryptocurrencies();
     
     // Event listeners
-    searchInput.addEventListener('input', handleSearch);
+    searchInput.addEventListener('input', debounce(handleSearch, 300));
     searchButton.addEventListener('click', handleSearch);
     sortByNameBtn.addEventListener('click', () => handleSort('symbol'));
     sortByPriceBtn.addEventListener('click', () => handleSort('price'));
@@ -30,41 +30,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Functions
-    function fetchCryptocurrencies() {
-        showLoading(true);
-        
-        fetch('/api/prices')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log(`Received ${data.length} cryptocurrencies from API`);
+    async function fetchCryptocurrencies() {
+        try {
+            showLoading(true);
+            const response = await fetch('/api/prices');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            console.log(`Received ${data.length} cryptocurrencies from API`);
                 
-                if (!data || data.length === 0) {
-                    showNoResults(true);
-                    return;
-                }
+            if (!data || data.length === 0) {
+                showNoResults(true);
+                return;
+            }
                 
-                // Store all cryptos and add parsed price
-                allCryptos = data.map(crypto => ({
-                    ...crypto,
-                    parsedPrice: parseFloat(crypto.price)
-                }));
+            // Store all cryptos and add parsed price
+            allCryptos = data.map(crypto => ({
+                ...crypto,
+                parsedPrice: parseFloat(crypto.price)
+            }));
                 
-                // Apply initial filter and sort
-                applyFilterAndSort();
-                
-                // Hide loading indicator
-                showLoading(false);
-            })
-            .catch(error => {
-                console.error('Error fetching prices:', error);
-                showError(true);
-                showLoading(false);
-            });
+            // Apply initial filter and sort
+            applyFilterAndSort();
+        } catch (error) {
+            console.error('Error fetching prices:', error);
+            showError(true);
+        } finally {
+            showLoading(false);
+        }
     }
     
     function applyFilterAndSort() {
@@ -187,5 +179,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function showNoResults(show) {
         noResults.classList.toggle('d-none', !show);
+    }
+
+    function debounce(func, delay) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
     }
 });
