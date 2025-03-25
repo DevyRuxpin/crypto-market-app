@@ -1,9 +1,10 @@
-from flask_sqlalchemy import SQLAlchemy
+# models/__init__.py
+from .user import User
+from .portfolio import Portfolio, PortfolioItem
+from .watchlist import Watchlist, WatchlistSymbol
+from .alert import Alert
 
-db = SQLAlchemy()
-
-from .user import User  # Ensure User is imported from its respective file
-from .database import db  # Ensure db is imported from its respective file
-
-__all__ = ["User", "db"]  # Export User and db for external imports
-
+__all__ = [
+    'User', 'Portfolio', 'PortfolioItem', 
+    'Watchlist', 'WatchlistSymbol', 'Alert'
+]
