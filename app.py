@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 import uuid
 from forms import LoginForm  # Ensure you import your form class
-from models import User, db
+from models import User, db  # Ensure this matches the updated models module
 from flask_caching import Cache
 
 # Initialize Flask app
