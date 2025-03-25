@@ -1,8 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from . import db  # Import db from __init__.py
 from datetime import datetime
 import uuid
-
-db = SQLAlchemy()
 
 class Watchlist(db.Model):
     __tablename__ = 'watchlists'
@@ -73,4 +71,3 @@ class WatchlistSymbol(db.Model):
     
     # Ensure symbol uniqueness within a watchlist
     __table_args__ = (db.UniqueConstraint('watchlist_id', 'symbol'),)
-
