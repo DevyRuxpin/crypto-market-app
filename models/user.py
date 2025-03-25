@@ -1,10 +1,8 @@
-from . import db  # Import db from __init__.py
+# models/user.py
+from database import db
 from flask_login import UserMixin
 import json
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -19,7 +17,7 @@ class User(UserMixin, db.Model):
     two_factor_enabled = db.Column(db.Boolean, default=False)
     two_factor_secret = db.Column(db.String(32))
     
-    # Relationships
+    # Relationships defined using back_populates consistently
     portfolios = db.relationship('Portfolio', back_populates='user', cascade='all, delete-orphan')
     alerts = db.relationship('Alert', back_populates='user', cascade='all, delete-orphan')
     watchlists = db.relationship('Watchlist', back_populates='user', cascade='all, delete-orphan')
@@ -50,4 +48,3 @@ class User(UserMixin, db.Model):
     @classmethod
     def find_by_email(cls, email):
         return cls.query.filter_by(email=email).first()
-
