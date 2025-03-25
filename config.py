@@ -1,22 +1,23 @@
+# config.py
 import os
-from datetime import datetime
-import re
+from datetime import timedelta
 
 class Config:
-    # Handle Render's PostgreSQL URL format
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Flask configuration
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-secret-key-for-dev')
     
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
-    SQLALCHEMY_DATABASE_URI = database_url or 'sqlite:///crypto_market.db'
+    # SQLAlchemy configuration
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///crypto_market.db')
+    if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    @staticmethod
-    def init_app(app):
-        pass
-        
-    # Add current year for templates
-    @property
-    def now(self):
-        return datetime.now()
+    # Session configuration
+    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
+    
+    # Binance API configuration
+    BINANCE_API_KEY = os.environ.get('BINANCE_API_KEY', '')
+    BINANCE_API_SECRET = os.environ.get('BINANCE_API_SECRET', '')
+    
+    # CoinMarketCap API configuration
+    CMC_API_KEY = os.environ.get('CMC_API_KEY', '')
