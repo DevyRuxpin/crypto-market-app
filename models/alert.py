@@ -1,4 +1,4 @@
-from ..database import db  # Updated to use relative import
+from app.database import db
 from datetime import datetime
 import uuid
 

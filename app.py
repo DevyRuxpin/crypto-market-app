@@ -8,20 +8,16 @@ from datetime import datetime
 import logging
 import pyotp
 
-# Import database and models
-from .database import db  # Updated to use relative import
-from .models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert  # Updated to use relative imports
-
-# Import services
+# Use absolute imports
+from database import db
+from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert
+from routes.api import api_bp
+from routes.auth import auth_bp
+from routes.main import main_bp
 from services.websocket_service import websocket_service
-from services.api_service import BinanceService, CoinMarketCapService
 
 # Import forms
 from forms import LoginForm, SignupForm, TwoFactorForm
-
-# Import routes
-from .routes.api import api_bp
-from .routes.auth import auth_bp
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +34,11 @@ logger = logging.getLogger(__name__)
 def create_app(test_config=None):
     # Create and configure the app
     app = Flask(__name__)
+    
+    # Use environment variables for database URI and other sensitive data
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///crypto_market.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
     app.config.from_object('config.config[os.getenv("FLASK_ENV", "default")]')
     
     # Load test config if passed
@@ -312,4 +313,4 @@ def create_app(test_config=None):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run()
+    app.run(debug=os.getenv('FLASK_DEBUG', 'False') == 'True')

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 class Config:
     """Base configuration"""
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_HTTPONLY = True
@@ -20,21 +20,21 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev_cryptotracker.db')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///crypto_market_dev.db'
     SESSION_COOKIE_SECURE = False
     REMEMBER_COOKIE_SECURE = False
 
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///test_cryptotracker.db')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///crypto_market_test.db'
     SESSION_COOKIE_SECURE = False
     REMEMBER_COOKIE_SECURE = False
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///prod_cryptotracker.db')  # Added fallback
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///crypto_market.db')
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 

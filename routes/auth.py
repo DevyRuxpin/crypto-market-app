@@ -5,8 +5,8 @@ import uuid
 from datetime import datetime
 import pyotp
 
-from ..database import db  # Updated to use relative import
-from ..models import User, Portfolio, Watchlist, WatchlistSymbol  # Updated to use relative imports
+from app.database import db
+from app.models import User, Portfolio, Watchlist, WatchlistSymbol
 from forms import LoginForm, SignupForm, TwoFactorForm
 
 auth_bp = Blueprint('auth', __name__)
