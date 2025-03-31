@@ -11,7 +11,7 @@ import pyotp
 
 # Import database and models
 from database import db
-from models.portfolio import Portfolio, PortfolioItem
+from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert, db
 
 # Import services
 from services.websocket_service import websocket_service
