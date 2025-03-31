@@ -3,7 +3,7 @@ from datetime import timedelta
 
 class Config:
     """Base configuration"""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
+    SECRET_KEY = "default-secret-key"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_HTTPONLY = True
@@ -19,8 +19,8 @@ class Config:
 
 class DevelopmentConfig(Config):
     """Development configuration"""
+    SQLALCHEMY_DATABASE_URI = "sqlite:///crypto_market_dev.db"
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///crypto_market_dev.db'
     SESSION_COOKIE_SECURE = False
     REMEMBER_COOKIE_SECURE = False
 
@@ -33,8 +33,8 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Production configuration"""
+    SQLALCHEMY_DATABASE_URI = "sqlite:///crypto_market.db"
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///crypto_market.db')
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 

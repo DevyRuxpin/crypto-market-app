@@ -39,7 +39,11 @@ def create_app(test_config=None):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///crypto_market.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
-    app.config.from_object('config.config[os.getenv("FLASK_ENV", "default")]')
+    
+    # Fix the configuration loading
+    flask_env = os.getenv("FLASK_ENV", "default")
+    config_class = f"config.{flask_env.capitalize()}Config"
+    app.config.from_object(config_class)
     
     # Load test config if passed
     if test_config:
