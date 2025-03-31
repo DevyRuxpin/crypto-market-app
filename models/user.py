@@ -1,5 +1,5 @@
 # models/user.py
-from database import db
+from crypto_market_app.database import db
 from flask_login import UserMixin
 import json
 from datetime import datetime
