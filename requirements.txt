@@ -13,3 +13,6 @@ eventlet
 flask-cors
 email-validator
 pyotp
+flask-wtf  # Required for FlaskForm in forms.py
+flask-bootstrap  # Optional, if Bootstrap is used in templates
+flask-mail  # Required for email functionality (e.g., password reset)
