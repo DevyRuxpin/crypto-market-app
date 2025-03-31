@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask import Flask, render_template, redirect, url_for, flash, request, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -73,6 +73,16 @@ def create_app(test_config=None):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
+    
+    # Add `now` to Jinja2 context
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.utcnow()}
+    
+    # Route for favicon.ico
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
    
     # Authentication routes
     @app.route('/login', methods=['GET', 'POST'])

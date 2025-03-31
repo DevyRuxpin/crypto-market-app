@@ -1472,6 +1472,21 @@ function renderPortfolio(data) {
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    CryptoApp.init();
+    try {
+        CryptoApp.init();
+        CryptoApp.loadPageContent();
+    } catch (error) {
+        console.error('Error initializing app:', error);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Ensure all page-specific content is loaded
+    CryptoApp.loadPageContent();
+
+    // Add event listener for refresh button
+    document.getElementById('refresh-prices')?.addEventListener('click', function () {
+        CryptoApp.loadCryptoPrices();
+    });
 });
 

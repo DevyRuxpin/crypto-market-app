@@ -6,6 +6,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: PYTHONPATH=. gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
     healthCheckPath: /health
+    static:
+      - path: /static
+        source: static
     envVars:
       - key: FLASK_SECRET_KEY
         generateValue: true
