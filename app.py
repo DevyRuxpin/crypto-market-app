@@ -80,6 +80,8 @@ def create_app(test_config=None):
     
     # Register blueprints
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(main_bp, url_prefix='/')
     
     # Authentication routes
     @app.route('/login', methods=['GET', 'POST'])

@@ -11,13 +11,13 @@ import logging
 api_bp = Blueprint('api', __name__)
 logger = logging.getLogger(__name__)
 
+
+
 @api_bp.route('/prices', methods=['GET'])
 def get_prices():
     """Get all cryptocurrency prices"""
     try:
         prices = BinanceService.get_ticker_prices()
-        
-        # Get 24hr price changes
         changes_data = BinanceService.get_ticker_24hr()
         
         # Create a mapping of symbol to price change percentage
@@ -30,7 +30,6 @@ def get_prices():
         result = []
         for price_item in prices:
             symbol = price_item['symbol']
-            # Only include USDT pairs
             if symbol.endswith('USDT'):
                 result.append({
                     'symbol': symbol,
@@ -45,6 +44,9 @@ def get_prices():
     except Exception as e:
         logger.error(f"Error fetching prices: {e}")
         return jsonify({'error': 'Failed to fetch prices'}), 500
+
+
+
 
 @api_bp.route('/klines/<symbol>', methods=['GET'])
 def get_klines(symbol):

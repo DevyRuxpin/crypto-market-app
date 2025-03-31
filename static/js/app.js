@@ -1,9 +1,3 @@
-// static/js/app.js
-/**
- * Crypto Market Dashboard - Main JavaScript
- * Handles UI interactions, WebSocket connections, and API calls
- */
-
 // Global state
 const CryptoApp = {
     // WebSocket connection
@@ -199,8 +193,7 @@ const CryptoApp = {
         }
     },
     
-    // Load cryptocurrency prices for dashboard
-    loadCryptoPrices() {
+    function loadCryptoPrices() {
         const cryptoList = document.getElementById('crypto-list');
         const loadingIndicator = document.getElementById('loading-indicator');
         const errorMessage = document.getElementById('error-message');
@@ -216,7 +209,7 @@ const CryptoApp = {
                 return response.json();
             })
             .then(data => {
-                this.renderCryptoList(data);
+                renderCryptoList(data);
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
             })
             .catch(error => {
@@ -224,10 +217,9 @@ const CryptoApp = {
                 if (errorMessage) errorMessage.style.display = 'block';
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
             });
-    },
+    }
     
-    // Render cryptocurrency list
-    renderCryptoList(data) {
+    function renderCryptoList(data) {
         const cryptoList = document.getElementById('crypto-list');
         const searchInput = document.getElementById('searchInput');
         const filterSelect = document.getElementById('filterSelect');
@@ -265,6 +257,32 @@ const CryptoApp = {
             `;
             return;
         }
+        
+        // Create cards for each cryptocurrency
+        filteredData.forEach(crypto => {
+            const price = parseFloat(crypto.price);
+            const formattedPrice = formatPrice(price);
+            const baseSymbol = crypto.symbol.replace(/USDT$|BTC$/, '');
+            
+            const card = document.createElement('div');
+            card.className = 'col-md-3 mb-4';
+            card.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">${baseSymbol}</h5>
+                        <p class="card-text crypto-price" data-symbol="${crypto.symbol}" data-price="${price}">
+                            Price: ${formattedPrice}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a href="/crypto/${crypto.symbol}" class="btn btn-primary btn-sm stretched-link">View Details</a>
+                    </div>
+                </div>
+            `;
+            
+            cryptoList.appendChild(card);
+        });
+    }
         
         // Create cards for each cryptocurrency
         filteredData.forEach(crypto => {
@@ -593,91 +611,91 @@ const CryptoApp = {
         // Reload crypto prices with filtering
         this.loadCryptoPrices();
     },
-    
     // Load portfolio data
-    loadPortfolio() {
-        fetch('/api/portfolio')
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                this.renderPortfolio(data);
-            })
-            .catch(error => {
-                console.error('Error loading portfolio:', error);
-                this.showToast('Error', 'Failed to load portfolio data. Please try again.', 'danger');
-            });
-    },
+function loadPortfolio() {
+    fetch('/api/portfolio')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            renderPortfolio(data);
+        })
+        .catch(error => {
+            console.error('Error loading portfolio:', error);
+            showToast('Error', 'Failed to load portfolio data. Please try again.', 'danger');
+        });
+}
+
+// Render portfolio data
+function renderPortfolio(data) {
+    const holdingsTable = document.getElementById('holdings-table-body');
+    const totalValue = document.getElementById('total-value');
+    const totalInvested = document.getElementById('total-invested');
+    const totalProfit = document.getElementById('total-profit');
     
-    // Render portfolio data
-    renderPortfolio(data) {
-        const holdingsTable = document.getElementById('holdings-table-body');
-        const totalValue = document.getElementById('total-value');
-        const totalInvested = document.getElementById('total-invested');
-        const totalProfit = document.getElementById('total-profit');
+    if (holdingsTable) {
+        holdingsTable.innerHTML = '';
         
-        if (holdingsTable) {
-            holdingsTable.innerHTML = '';
-            
-            if (data.items && data.items.length > 0) {
-                data.items.forEach(item => {
-                    const row = document.createElement('tr');
-                    
-                    const profitLoss = item.current_value - item.invested;
-                    const profitLossPercent = item.invested > 0 ? (profitLoss / item.invested * 100) : 0;
-                    const profitLossClass = profitLoss >= 0 ? 'text-success' : 'text-danger';
-                    
-                    row.innerHTML = `
-                        <td>${item.symbol}</td>
-                        <td>${item.quantity.toFixed(8)}</td>
-                        <td>${this.formatPrice(item.purchase_price)}</td>
-                        <td>${this.formatPrice(item.current_price)}</td>
-                        <td>${this.formatPrice(item.current_value)}</td>
-                        <td class="${profitLossClass}">
-                            ${this.formatPrice(profitLoss)} (${profitLossPercent.toFixed(2)}%)
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary edit-asset" data-asset-id="${item.id}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-asset" data-asset-id="${item.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    
-                    holdingsTable.appendChild(row);
-                });
-            } else {
-                holdingsTable.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center">
-                            You don't have any assets in your portfolio yet.
-                            <button class="btn btn-sm btn-primary ms-3" data-bs-toggle="modal" data-bs-target="#add-asset-modal">
-                                Add Your First Asset
-                            </button>
-                        </td>
-                    </tr>
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const profitLoss = item.current_value - item.invested;
+                const profitLossPercent = item.invested > 0 ? (profitLoss / item.invested * 100) : 0;
+                const profitLossClass = profitLoss >= 0 ? 'text-success' : 'text-danger';
+                
+                row.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${item.quantity.toFixed(8)}</td>
+                    <td>${formatCurrency(item.purchase_price)}</td>
+                    <td>${formatCurrency(item.current_price)}</td>
+                    <td>${formatCurrency(item.current_value)}</td>
+                    <td class="${profitLossClass}">
+                        ${formatCurrency(profitLoss)} (${profitLossPercent.toFixed(2)}%)
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-asset" data-asset-id="${item.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-asset" data-asset-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
-            }
+                
+                holdingsTable.appendChild(row);
+            });
+        } else {
+            holdingsTable.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center">
+                        You don't have any assets in your portfolio yet.
+                        <button class="btn btn-sm btn-primary ms-3" data-bs-toggle="modal" data-bs-target="#add-asset-modal">
+                            Add Your First Asset
+                        </button>
+                    </td>
+                </tr>
+            `;
         }
-        
-        // Update summary values
-        if (totalValue && data.total_current_value !== undefined) {
-            totalValue.textContent = this.formatPrice(data.total_current_value);
-        }
-        
-        if (totalInvested && data.total_invested !== undefined) {
-            totalInvested.textContent = this.formatPrice(data.total_invested);
-        }
-        
-        if (totalProfit && data.total_profit_loss !== undefined) {
-            const profitClass = data.total_profit_loss >= 0 ? 'text-success' : 'text-danger';
-            totalProfit.className = profitClass;
-            totalProfit.textContent = `${this.formatPrice(data.total_profit_loss)} (${data.total_profit_loss_percent.toFixed(2)}%)`;
-        }
-    },
+    }
+    
+    // Update summary values
+    if (totalValue && data.total_current_value !== undefined) {
+        totalValue.textContent = formatCurrency(data.total_current_value);
+    }
+    
+    if (totalInvested && data.total_invested !== undefined) {
+        totalInvested.textContent = formatCurrency(data.total_invested);
+    }
+    
+    if (totalProfit && data.total_profit_loss !== undefined) {
+        const profitClass = data.total_profit_loss >= 0 ? 'text-success' : 'text-danger';
+        totalProfit.className = profitClass;
+        totalProfit.textContent = `${formatCurrency(data.total_profit_loss)} (${data.total_profit_loss_percent.toFixed(2)}%)`;
+    }
+}
+    
     
     // Add portfolio asset
     addPortfolioAsset() {

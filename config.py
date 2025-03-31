@@ -1,4 +1,3 @@
-# config.py
 import os
 from datetime import timedelta
 
@@ -15,8 +14,8 @@ class Config:
     BINANCE_API_SECRET = os.environ.get('BINANCE_API_SECRET')
     COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY')
     
-    # Logging
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    # Database Configuration
+    SQLALCHEMY_DATABASE_URI = f"postgresql://crypto_market_app_user:@localhost:5432/crypto_market_app"
 
 class DevelopmentConfig(Config):
     """Development configuration"""

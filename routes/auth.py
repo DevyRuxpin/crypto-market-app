@@ -1,4 +1,3 @@
-# routes/auth.py
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -37,6 +36,7 @@ def login():
             flash('Invalid email or password', 'danger')
             
     return render_template('login.html', form=form)
+
 
 @auth_bp.route('/two-factor', methods=['GET', 'POST'])
 def two_factor():

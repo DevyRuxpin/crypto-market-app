@@ -80,7 +80,6 @@ function initializeSocketIO() {
     }
 }
 
-// Handle price updates from WebSocket
 function handlePriceUpdate(data) {
     const symbol = data.symbol;
     const price = parseFloat(data.price);
@@ -127,6 +126,7 @@ function handlePriceUpdate(data) {
         priceChart.update();
     }
 }
+
 
 // Subscribe to price updates for a symbol
 function subscribeToPriceUpdates(symbol) {
