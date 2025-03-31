@@ -4,192 +4,174 @@
 {% block title %}Dashboard - Crypto Tracker{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="mb-3">Cryptocurrency Dashboard</h1>
-        <p class="lead">Track real-time prices, market trends, and manage your crypto assets.</p>
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col text-center">
+            <h1 class="display-4">Cryptocurrency Dashboard</h1>
+            <p class="lead">Track real-time prices, market trends, and manage your crypto assets.</p>
+        </div>
     </div>
-</div>
 
-<!-- Market Overview -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Market Overview
-                </h5>
+    <!-- Market Overview -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Market Cap</h6>
+                    <h3 class="text-primary" id="market-cap">$1.2T</h3>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <div class="card h-100 bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">Total Market Cap</h6>
-                                <h3 class="card-title" id="total-market-cap">$1.23T</h3>
-                                <p class="card-text text-success">
-                                    <i class="fas fa-arrow-up me-1"></i>2.3%
-                                </p>
-                            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">24h Volume</h6>
+                    <h3 class="text-primary" id="total-volume">$78.5B</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">BTC Dominance</h6>
+                    <h3 class="text-primary" id="btc-dominance">42.7%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Active Cryptocurrencies</h6>
+                    <h3 class="text-primary" id="active-cryptos">10,482</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">Filter</span>
+                <select id="filterSelect" class="form-select">
+                    <option value="all">All Pairs</option>
+                    <option value="usdt">USDT Pairs</option>
+                    <option value="btc">BTC Pairs</option>
+                    <option value="gainers">Top Gainers</option>
+                    <option value="losers">Top Losers</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" id="refresh-prices">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                {% if current_user.is_authenticated %}
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#add-to-watchlist-modal">
+                    <i class="fas fa-star me-1"></i>Add to Watchlist
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Cryptocurrency List -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cryptocurrency Prices</h5>
+                </div>
+                <div class="card-body">
+                    <div id="loading-indicator" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
+                        <p class="mt-2">Loading cryptocurrency data...</p>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card h-100 bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">24h Volume</h6>
-                                <h3 class="card-title" id="total-volume">$78.5B</h3>
-                                <p class="card-text text-danger">
-                                    <i class="fas fa-arrow-down me-1"></i>1.2%
-                                </p>
-                            </div>
-                        </div>
+                    
+                    <div id="error-message" class="alert alert-danger" style="display: none;">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading cryptocurrency data. Please try again later.
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card h-100 bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">BTC Dominance</h6>
-                                <h3 class="card-title" id="btc-dominance">42.7%</h3>
-                                <p class="card-text text-success">
-                                    <i class="fas fa-arrow-up me-1"></i>0.5%
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="card h-100 bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-subtitle mb-2 text-muted">Active Cryptocurrencies</h6>
-                                <h3 class="card-title" id="active-cryptos">10,482</h3>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>Updated daily
-                                </p>
-                            </div>
-                        </div>
+                    
+                    <div id="crypto-list" class="row">
+                        <!-- Cryptocurrency cards will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Filters and Controls -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <div class="input-group mb-3">
-            <span class="input-group-text">Filter</span>
-            <select id="filterSelect" class="form-select">
-                <option value="all">All Pairs</option>
-                <option value="usdt">USDT Pairs</option>
-                <option value="btc">BTC Pairs</option>
-                <option value="gainers">Top Gainers</option>
-                <option value="losers">Top Losers</option>
-            </select>
-        </div>
-    </div>
-    <div class="col-md-6 text-end">
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-primary" id="refresh-prices">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-            </button>
-            {% if current_user.is_authenticated %}
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#add-to-watchlist-modal">
-                <i class="fas fa-star me-1"></i>Add to Watchlist
-            </button>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Cryptocurrencies List -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-primary text-white">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-coins me-2"></i>Cryptocurrency Prices
-        </h5>
-    </div>
-    <div class="card-body">
-        <div id="loading-indicator" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2">Loading cryptocurrency data...</p>
-        </div>
-        
-        <div id="error-message" class="alert alert-danger" style="display: none;">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            Error loading cryptocurrency data. Please try again later.
-        </div>
-        
-        <div class="row" id="crypto-list">
-            <!-- Cryptocurrency cards will be inserted here by JavaScript -->
-        </div>
-    </div>
-</div>
-
-<!-- Recent News -->
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-newspaper me-2"></i>Recent News
-        </h5>
-    </div>
-    <div class="card-body">
-        <div id="news-loading" class="text-center py-3">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2">Loading news...</p>
-        </div>
-        
-        <div id="news-error" class="alert alert-danger" style="display: none;">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            Error loading news. Please try again later.
-        </div>
-        
-        <div class="row" id="news-list">
-            <!-- News items will be inserted here by JavaScript -->
-        </div>
-        
-        <div class="text-center mt-3">
-            <a href="{{ url_for('news') }}" class="btn btn-outline-primary">
-                <i class="fas fa-newspaper me-1"></i>View All News
-            </a>
-        </div>
-    </div>
-</div>
-
-{% if current_user.is_authenticated %}
-<!-- Add to Watchlist Modal -->
-<div class="modal fade" id="add-to-watchlist-modal" tabindex="-1" aria-labelledby="addToWatchlistModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addToWatchlistModalLabel">Add to Watchlist</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="add-to-watchlist-form">
-                    <div class="mb-3">
-                        <label for="watchlist-select-add" class="form-label">Select Watchlist</label>
-                        <select id="watchlist-select-add" class="form-select" required>
-                            <option value="">Select a watchlist</option>
-                            <!-- Watchlist options will be inserted here by JavaScript -->
-                        </select>
+    <!-- Recent News -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-newspaper me-2"></i>Recent News
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="news-loading" class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading news...</p>
                     </div>
-                    <div class="mb-3">
-                        <label for="watchlist-symbol" class="form-label">Symbol</label>
-                        <input type="text" class="form-control" id="watchlist-symbol" placeholder="e.g., BTCUSDT" required>
+                    
+                    <div id="news-error" class="alert alert-danger" style="display: none;">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading news. Please try again later.
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                    
+                    <div id="news-list" class="row">
+                        <!-- News items will be inserted here by JavaScript -->
                     </div>
-                </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('news') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-newspaper me-1"></i>View All News
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endif %}
 
+    {% if current_user.is_authenticated %}
+    <!-- Add to Watchlist Modal -->
+    <div class="modal fade" id="add-to-watchlist-modal" tabindex="-1" aria-labelledby="addToWatchlistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addToWatchlistModalLabel">Add to Watchlist</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-to-watchlist-form">
+                        <div class="mb-3">
+                            <label for="watchlist-select-add" class="form-label">Select Watchlist</label>
+                            <select id="watchlist-select-add" class="form-select" required>
+                                <option value="">Select a watchlist</option>
+                                <!-- Watchlist options will be inserted here by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="watchlist-symbol" class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="watchlist-symbol" placeholder="e.g., BTCUSDT" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
