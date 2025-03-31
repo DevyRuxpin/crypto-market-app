@@ -1,4 +1,4 @@
-from . import db  # Import db from __init__.py
+from database import db
 from datetime import datetime
 import uuid
 
@@ -64,6 +64,9 @@ class PortfolioItem(db.Model):
     purchase_price = db.Column(db.Float, nullable=False)
     purchase_date = db.Column(db.DateTime, default=datetime.utcnow)
     invested = db.Column(db.Float, nullable=False)
+    
+    # Relationships
+    portfolio = db.relationship('Portfolio', back_populates='items')
     
     # Relationships
     portfolio = db.relationship('Portfolio', back_populates='items')
