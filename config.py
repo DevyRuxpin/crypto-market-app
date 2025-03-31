@@ -33,7 +33,7 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Production configuration"""
-    SQLALCHEMY_DATABASE_URI = "sqlite:///crypto_market.db"
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', "sqlite:///crypto_market.db")  # Use DATABASE_URL
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True

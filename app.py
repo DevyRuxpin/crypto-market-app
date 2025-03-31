@@ -8,6 +8,10 @@ from datetime import datetime
 import logging
 import pyotp
 from flask_cors import CORS  # Add CORS for cross-origin requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Use absolute imports
 from database import db
@@ -32,8 +36,18 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
+
+# Configure the database URI
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+    'DATABASE_URL',  # Use Render's DATABASE_URL environment variable
+    'sqlite:///crypto_market_app.db'  # Fallback to SQLite for local development
+)
+
+# Optional: Track modifications (disable for performance)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Register Blueprints
 app.register_blueprint(api_bp, url_prefix='/api')
