@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 from models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
 from database import db
 from services.binance_service import get_crypto_prices, get_crypto_details, get_top_cryptos
+from services.binance_api import BinanceAPI
 import uuid
 from datetime import datetime
 import logging
@@ -667,3 +668,85 @@ def update_settings():
         logger.error(f"Error updating settings: {e}")
         db.session.rollback()
         return jsonify({'error': 'Failed to update settings'}), 500
+
+@api_bp.route('/binance/aggTrades', methods=['GET'])
+def agg_trades():
+    symbol = request.args.get('symbol')
+    limit = request.args.get('limit', 500)
+    data = BinanceAPI.get_agg_trades(symbol, limit)
+    return jsonify(data)
+
+@api_bp.route('/binance/avgPrice', methods=['GET'])
+def avg_price():
+    symbol = request.args.get('symbol')
+    data = BinanceAPI.get_avg_price(symbol)
+    return jsonify(data)
+
+@api_bp.route('/binance/depth', methods=['GET'])
+def depth():
+    symbol = request.args.get('symbol')
+    limit = request.args.get('limit', 100)
+    data = BinanceAPI.get_depth(symbol, limit)
+    return jsonify(data)
+
+@api_bp.route('/binance/exchangeInfo', methods=['GET'])
+def exchange_info():
+    data = BinanceAPI.get_exchange_info()
+    return jsonify(data)
+
+@api_bp.route('/binance/klines', methods=['GET'])
+def klines():
+    symbol = request.args.get('symbol')
+    interval = request.args.get('interval')
+    limit = request.args.get('limit', 500)
+    data = BinanceAPI.get_klines(symbol, interval, limit)
+    return jsonify(data)
+
+@api_bp.route('/binance/ping', methods=['GET'])
+def ping():
+    success = BinanceAPI.ping()
+    return jsonify({"success": success})
+
+@api_bp.route('/binance/ticker', methods=['GET'])
+def ticker():
+    symbol = request.args.get('symbol')
+    data = BinanceAPI.get_ticker(symbol)
+    return jsonify(data)
+
+@api_bp.route('/binance/ticker/24hr', methods=['GET'])
+def ticker_24hr():
+    symbol = request.args.get('symbol')
+    data = BinanceAPI.get_24hr_ticker(symbol)
+    return jsonify(data)
+
+@api_bp.route('/binance/ticker/bookTicker', methods=['GET'])
+def book_ticker():
+    symbol = request.args.get('symbol')
+    data = BinanceAPI.get_book_ticker(symbol)
+    return jsonify(data)
+
+@api_bp.route('/binance/ticker/price', methods=['GET'])
+def ticker_price():
+    symbol = request.args.get('symbol')
+    data = BinanceAPI.get_price(symbol)
+    return jsonify(data)
+
+@api_bp.route('/binance/time', methods=['GET'])
+def server_time():
+    data = BinanceAPI.get_server_time()
+    return jsonify(data)
+
+@api_bp.route('/binance/trades', methods=['GET'])
+def trades():
+    symbol = request.args.get('symbol')
+    limit = request.args.get('limit', 500)
+    data = BinanceAPI.get_trades(symbol, limit)
+    return jsonify(data)
+
+@api_bp.route('/binance/uiKlines', methods=['GET'])
+def ui_klines():
+    symbol = request.args.get('symbol')
+    interval = request.args.get('interval')
+    limit = request.args.get('limit', 500)
+    data = BinanceAPI.get_ui_klines(symbol, interval, limit)
+    return jsonify(data)
