@@ -3,6 +3,8 @@ from .user import User
 from .watchlist import Watchlist, WatchlistSymbol
 from .alert import Alert
 
+from database import db
+
 __all__ = [
     'User',
     'Portfolio',
