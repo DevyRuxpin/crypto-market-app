@@ -1,6 +1,6 @@
-from app.models.user import User
-from app.models.portfolio import Portfolio, PortfolioItem
-from app.models.alert import Alert
-from app.models.watchlist import Watchlist, WatchlistSymbol
+from .user import User
+from .portfolio import Portfolio, PortfolioItem
+from .alert import Alert
+from .watchlist import Watchlist, WatchlistSymbol
 
-from app.database import db
+from database import db

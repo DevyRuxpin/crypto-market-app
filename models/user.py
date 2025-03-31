@@ -1,5 +1,5 @@
 # models/user.py
-from ..database import db  # Updated to use relative import
+from database import db  # Updated to use relative import
 from flask_login import UserMixin
 import json
 from datetime import datetime

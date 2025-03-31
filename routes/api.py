@@ -1,9 +1,9 @@
 # routes/api.py
-from flask import Blueprint, jsonify, request, current_app
-from flask_login import login_required, current_user
-from app.models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
-from app.database import db
-from services.api_service import BinanceService, CoinMarketCapService, TechnicalAnalysisService, NewsService
+from flask import Blueprint, jsonify, request, abort
+from flask_login import current_user, login_required
+from models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
+from database import db
+from services.binance_service import get_crypto_prices, get_crypto_details, get_top_cryptos
 import uuid
 from datetime import datetime
 import logging
