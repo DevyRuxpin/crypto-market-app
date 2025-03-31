@@ -88,6 +88,15 @@ body.dark-mode .modal-content {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
+#crypto-list .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#crypto-list .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
 .card-header {
     font-weight: 600;
     border-top-left-radius: 8px;
@@ -196,6 +205,13 @@ body.dark-mode .footer {
 }
 
 /* Error messages */
+#error-message {
+    display: none;
+    color: red;
+    text-align: center;
+    margin-top: 20px;
+}
+
 .alert {
     margin-top: 20px;
 }

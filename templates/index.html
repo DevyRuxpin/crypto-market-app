@@ -53,27 +53,13 @@
 
 <section class="mt-5" id="top-crypto">
     <h2 class="text-center mb-4">Top Cryptocurrencies</h2>
-    <div class="text-center mb-3" id="crypto-loading">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <div class="row" id="crypto-list">
+        <div class="text-center py-5" id="crypto-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading top cryptocurrencies...</p>
         </div>
-        <p>Loading top cryptocurrencies...</p>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover" id="crypto-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th>24h Change</th>
-                    <th>Market Cap</th>
-                </tr>
-            </thead>
-            <tbody id="crypto-table-body">
-                <!-- Data will be loaded here -->
-            </tbody>
-        </table>
     </div>
 </section>
 {% endblock %}
@@ -87,24 +73,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            const tableBody = document.getElementById('crypto-table-body');
+            const cryptoList = document.getElementById('crypto-list');
             document.getElementById('crypto-loading').style.display = 'none';
 
             if (!data || data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+                cryptoList.innerHTML = '<div class="text-center w-100"><p>No data available</p></div>';
                 return;
             }
 
             data.slice(0, 10).forEach((coin, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${coin.symbol.replace('USDT', '')}</td>
-                    <td>${formatCurrency(parseFloat(coin.price))}</td>
-                    <td>${coin.price_change_24h.toFixed(2)}%</td>
-                    <td>--</td>
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                card.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">${coin.symbol.replace('USDT', '')}</h5>
+                            <p class="card-text">Price: ${formatCurrency(parseFloat(coin.price))}</p>
+                            <p class="card-text">24h Change: ${coin.price_change_24h.toFixed(2)}%</p>
+                        </div>
+                    </div>
                 `;
-                tableBody.appendChild(row);
+                cryptoList.appendChild(card);
             });
         })
         .catch(error => {

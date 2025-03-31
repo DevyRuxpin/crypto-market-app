@@ -12,11 +12,16 @@ from services.binance_api import BinanceAPI
 import uuid
 from datetime import datetime
 import logging
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 api_bp = Blueprint('api', __name__)
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(get_remote_address, app=app, default_limits=["60 per minute"])
+
 @api_bp.route('/prices', methods=['GET'])
+@limiter.limit("10 per minute")
 def get_prices():
     """Get all cryptocurrency prices"""
     try:
