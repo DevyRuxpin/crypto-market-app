@@ -1,4 +1,3 @@
-# app.py
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -11,7 +10,7 @@ import pyotp
 
 # Import database and models
 from database import db
-from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert, db
+from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert
 
 # Import services
 from services.websocket_service import websocket_service
@@ -82,7 +81,7 @@ def create_app(test_config=None):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
-    
+   
     # Authentication routes
     @app.route('/login', methods=['GET', 'POST'])
     def login():
