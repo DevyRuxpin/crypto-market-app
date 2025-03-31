@@ -52,7 +52,7 @@
             <div class="modal-body">
                 <p>If you've lost access to your authenticator app, you can use one of your recovery codes to sign in.</p>
                 
-                <form method="POST" action="{{ url_for('recovery_code') }}">
+                <form method="POST" action="{{ url_for('auth.recovery_code') }}">
                     {{ recovery_form.hidden_tag() }}
                     
                     <div class="mb-3">

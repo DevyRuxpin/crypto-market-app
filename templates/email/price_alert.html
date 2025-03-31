@@ -92,7 +92,7 @@
             </div>
             
             <p style="text-align: center;">
-                <a href="{{ url_for('market', _external=True) }}" class="button">View Market</a>
+                <a href="{{ url_for('main.market', _external=True) }}" class="button">View Market</a>
             </p>
             
             <p>You can manage your price alerts in your account settings.</p>
@@ -105,7 +105,7 @@
             <p>
                 <small>
                     If you no longer wish to receive price alert emails, you can 
-                    <a href="{{ url_for('profile', _external=True) }}">update your notification preferences</a>.
+                    <a href="{{ url_for('auth.profile', _external=True) }}">update your notification preferences</a>.
                 </small>
             </p>
         </div>
