@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request, abort
 from flask_login import current_user, login_required
 from models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
 from database import db
-from services.binance_service import get_crypto_prices, get_crypto_details, get_top_cryptos
+from services.binance_service import BinanceService
 from services.binance_api import BinanceAPI
 import uuid
 from datetime import datetime
@@ -16,13 +16,11 @@ import logging
 api_bp = Blueprint('api', __name__)
 logger = logging.getLogger(__name__)
 
-
-
 @api_bp.route('/prices', methods=['GET'])
 def get_prices():
     """Get all cryptocurrency prices"""
     try:
-        prices = BinanceService.get_ticker_prices()
+        prices = BinanceService.get_crypto_prices()  # Use the correct method from the class
         changes_data = BinanceService.get_ticker_24hr()
         
         # Create a mapping of symbol to price change percentage
@@ -49,9 +47,6 @@ def get_prices():
     except Exception as e:
         logger.error(f"Error fetching prices: {e}")
         return jsonify({'error': 'Failed to fetch prices'}), 500
-
-
-
 
 @api_bp.route('/klines/<symbol>', methods=['GET'])
 def get_klines(symbol):

@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
 
 # Register Blueprints
 app.register_blueprint(api_bp, url_prefix='/api')

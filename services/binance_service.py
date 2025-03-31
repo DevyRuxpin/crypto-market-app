@@ -43,3 +43,14 @@ class BinanceService:
         """
         # Placeholder implementation; replace with actual logic if needed
         return ["BTC", "ETH", "BNB"]
+
+    @staticmethod
+    def get_ticker_24hr():
+        """
+        Fetches 24-hour ticker price change statistics for all symbols.
+        """
+        try:
+            return BinanceAPI.get_24hr_ticker()
+        except Exception as e:
+            print(f"Error fetching 24hr ticker data: {e}")
+            return None
