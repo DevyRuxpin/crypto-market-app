@@ -12,6 +12,7 @@ def init_db():
     with app.app_context():
         # Create tables
         db.create_all()
+        print("Database initialized.")
         
         # Check if admin user exists
         admin = User.query.filter_by(email='admin@example.com').first()
