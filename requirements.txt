@@ -12,3 +12,4 @@ sqlalchemy
 eventlet
 flask-cors
 email-validator
+pyotp
