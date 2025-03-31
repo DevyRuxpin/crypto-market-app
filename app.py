@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 import logging
 import pyotp
+from flask_cors import CORS  # Add CORS for cross-origin requests
 
 # Use absolute imports
 from database import db
@@ -32,9 +33,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS
 
 # Register Blueprints
 app.register_blueprint(api_bp, url_prefix='/api')
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(main_bp, url_prefix='/')
 
+# Database initialization
+db.init_app(app)
+
+# Ensure app runs with gunicorn
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
