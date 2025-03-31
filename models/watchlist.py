@@ -1,6 +1,7 @@
-from .models import db
+from ..database import db
 from datetime import datetime
 import uuid
+
 
 class Watchlist(db.Model):
     __tablename__ = 'watchlists'
