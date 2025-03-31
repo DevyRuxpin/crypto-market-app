@@ -1,4 +1,4 @@
-from . import db  # Import db from __init__.py
+from .models import db
 from datetime import datetime
 import uuid
 
