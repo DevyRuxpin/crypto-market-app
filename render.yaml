@@ -3,54 +3,27 @@ services:
     name: crypto-market-app
     env: python
     runtime: python3
-    buildCommand: pip install -r requirements.txt
-    startCommand: PYTHONPATH=. gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
+    buildCommand: ./build.sh
+    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app
     healthCheckPath: /health
     static:
       - path: /static
         source: static
     envVars:
-      - key: FLASK_SECRET_KEY
-        generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: BINANCE_API_BASE_URL
-        value: https://data-api.binance.vision
-      - key: BINANCE_WS_BASE_URL
-        value: wss://data-stream.binance.vision
-      - key: COINMARKETCAP_API_KEY
-        value: bda79d78-5f5c-41c3-892e-3584b698e234
-      - key: COINMARKETCAP_API_URL
-        value: https://pro-api.coinmarketcap.com/v1
       - key: DATABASE_URL
         fromDatabase:
           name: crypto-market-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: crypto-market-redis
-          type: redis
-          property: connectionString
-      - key: MAIL_SERVER
-        value: smtp.sendgrid.net
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USE_TLS
-        value: true
-      - key: MAIL_USERNAME
-        value: apikey
-      - key: MAIL_PASSWORD
+      - key: SECRET_KEY
+        generateValue: true
+      - key: BINANCE_API_KEY
         sync: false
-      - key: MAIL_DEFAULT_SENDER
-        value: noreply@cryptomarket.example.com
-      - key: ADMIN_EMAIL
+      - key: BINANCE_API_SECRET
         sync: false
-      - key: SESSION_TYPE
-        value: redis
-      - key: SESSION_PERMANENT
-        value: false
-      - key: SESSION_USE_SIGNER
-        value: true
+      - key: COINMARKETCAP_API_KEY
+        sync: false
 
   # Worker for background tasks (optional - if you need background processing)
   - type: worker

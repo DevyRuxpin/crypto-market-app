@@ -31,12 +31,21 @@ def signup():
         return redirect(url_for('main.dashboard'))
     form = SignupForm()
     if form.validate_on_submit():
-        # Add user creation logic here
+        user = User(
+            id=str(uuid.uuid4()),
+            name=form.name.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data),
+            created_at=datetime.utcnow()
+        )
+        db.session.add(user)
+        db.session.commit()
         flash('Account created successfully!', 'success')
         return redirect(url_for('auth.login'))
     return render_template('signup.html', form=form)
 
 @auth_bp.route('/logout')
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))

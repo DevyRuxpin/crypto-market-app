@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 import logging
 import pyotp
-from flask_cors import CORS  # Add CORS for cross-origin requests
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -45,17 +45,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL',  # Use Render's DATABASE_URL environment variable
     'sqlite:///crypto_market_app.db'  # Fallback to SQLite for local development
 )
-
-# Optional: Track modifications (disable for performance)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
+
+# Initialize extensions
+db.init_app(app)
+migrate = Migrate(app, db)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 # Register Blueprints
 app.register_blueprint(api_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(main_bp, url_prefix='/')
 
-# Database initialization
-db.init_app(app)
+@app.route('/health', methods=['GET'])
+def health_check():
+    return "OK", 200
 
 # Ensure app runs with gunicorn
 if __name__ == "__main__":

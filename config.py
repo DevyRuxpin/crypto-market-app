@@ -3,7 +3,7 @@ from datetime import timedelta
 
 class Config:
     """Base configuration"""
-    SECRET_KEY = "default-secret-key"
+    SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_HTTPONLY = True
@@ -15,11 +15,14 @@ class Config:
     COINMARKETCAP_API_KEY = os.environ.get('COINMARKETCAP_API_KEY')
     
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI = f"postgresql://crypto_market_app_user:@localhost:5432/crypto_market_app"
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///crypto_market_app.db')
+
+    # Handle Render's SSL requirement for PostgreSQL
+    if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
 
 class DevelopmentConfig(Config):
     """Development configuration"""
-    SQLALCHEMY_DATABASE_URI = "sqlite:///crypto_market_dev.db"
     DEBUG = True
     SESSION_COOKIE_SECURE = False
     REMEMBER_COOKIE_SECURE = False
@@ -33,7 +36,6 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Production configuration"""
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', "sqlite:///crypto_market.db")  # Use DATABASE_URL
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
