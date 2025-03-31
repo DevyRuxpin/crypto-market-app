@@ -53,9 +53,17 @@ class BinanceAPI:
 
     @staticmethod
     def get_price(symbol=None):
+        """
+        Fetches the latest price(s) for a symbol or all symbols.
+        """
         params = {"symbol": symbol} if symbol else {}
-        response = requests.get(f"{BASE_URL}/ticker/price", params=params)
-        return response.json()
+        try:
+            response = requests.get(f"{BASE_URL}/ticker/price", params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Error fetching price: {e}")
+            return None
 
     @staticmethod
     def get_server_time():
