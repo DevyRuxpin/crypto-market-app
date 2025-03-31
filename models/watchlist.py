@@ -2,7 +2,6 @@ from ..database import db
 from datetime import datetime
 import uuid
 
-
 class Watchlist(db.Model):
     __tablename__ = 'watchlists'
     
@@ -15,6 +14,7 @@ class Watchlist(db.Model):
     # Relationships
     user = db.relationship('User', back_populates='watchlists')
     symbols = db.relationship('WatchlistSymbol', back_populates='watchlist', cascade='all, delete-orphan')
+
     
     @classmethod
     def get_user_watchlists(cls, user_id):
