@@ -20,30 +20,23 @@ logger = logging.getLogger(__name__)
 def get_prices():
     """Get all cryptocurrency prices"""
     try:
-        prices = BinanceService.get_crypto_prices()  # Use the correct method from the class
+        prices = BinanceService.get_crypto_prices()
         changes_data = BinanceService.get_ticker_24hr()
-        
-        # Create a mapping of symbol to price change percentage
-        changes = {}
-        if changes_data:
-            for item in changes_data:
-                changes[item['symbol']] = float(item['priceChangePercent'])
-        
-        # Combine prices with change data
-        result = []
-        for price_item in prices:
-            symbol = price_item['symbol']
-            if symbol.endswith('USDT'):
-                result.append({
-                    'symbol': symbol,
-                    'price': float(price_item['price']),
-                    'price_change_24h': changes.get(symbol, 0)
-                })
-        
-        # Sort by market cap (approximated by price * volume)
-        result.sort(key=lambda x: x['price_change_24h'], reverse=True)
-        
-        return jsonify(result[:100])  # Limit to top 100 for performance
+
+        if not prices or not changes_data:
+            return jsonify([]), 200
+
+        changes = {item['symbol']: float(item['priceChangePercent']) for item in changes_data}
+        result = [
+            {
+                'symbol': price['symbol'],
+                'price': float(price['price']),
+                'price_change_24h': changes.get(price['symbol'], 0)
+            }
+            for price in prices if price['symbol'].endswith('USDT')
+        ]
+
+        return jsonify(result[:100])  # Limit to top 100
     except Exception as e:
         logger.error(f"Error fetching prices: {e}")
         return jsonify({'error': 'Failed to fetch prices'}), 500

@@ -135,8 +135,12 @@ const CryptoApp = {
             });
             
             // Price update handler
-            this.socket.on('price_update', (data) => {
-                this.handlePriceUpdate(data);
+            this.socket.on('price_update', function(data) {
+                const symbol = data.symbol.endsWith('USDT') ? data.symbol.slice(0, -4) : data.symbol;
+                const priceElement = document.querySelector(`[data-symbol="${symbol}"]`);
+                if (priceElement) {
+                    priceElement.textContent = formatCurrency(parseFloat(data.price));
+                }
             });
             
             // Alert notification handler

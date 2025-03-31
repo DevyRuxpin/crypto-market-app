@@ -36,20 +36,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/prices');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
-            console.log(`Received ${data.length} cryptocurrencies from API`);
-                
+
             if (!data || data.length === 0) {
                 showNoResults(true);
+                cryptoList.innerHTML = '<div class="alert alert-info">No cryptocurrencies available.</div>';
                 return;
             }
-                
-            // Store all cryptos and add parsed price
+
             allCryptos = data.map(crypto => ({
                 ...crypto,
                 parsedPrice: parseFloat(crypto.price)
             }));
-                
-            // Apply initial filter and sort
+
             applyFilterAndSort();
         } catch (error) {
             console.error('Error fetching prices:', error);

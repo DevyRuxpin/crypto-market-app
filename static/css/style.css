@@ -186,3 +186,16 @@ body.dark-mode .footer {
 .toast-container {
     z-index: 1050;
 }
+
+/* Loading indicators */
+#crypto-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+/* Error messages */
+.alert {
+    margin-top: 20px;
+}

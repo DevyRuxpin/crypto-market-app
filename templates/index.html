@@ -81,28 +81,29 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch top cryptocurrencies
     fetch('/api/prices')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch cryptocurrency data');
+            return response.json();
+        })
         .then(data => {
             const tableBody = document.getElementById('crypto-table-body');
             document.getElementById('crypto-loading').style.display = 'none';
-            
-            // Display top 10 cryptocurrencies
-            const topCoins = data.slice(0, 10);
-            
-            topCoins.forEach((coin, index) => {
+
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+                return;
+            }
+
+            data.slice(0, 10).forEach((coin, index) => {
                 const row = document.createElement('tr');
-                const price = parseFloat(coin.price);
-                
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${coin.symbol.replace('USDT', '')}</td>
-                    <td>${formatCurrency(price)}</td>
-                    <td>--</td>
+                    <td>${formatCurrency(parseFloat(coin.price))}</td>
+                    <td>${coin.price_change_24h.toFixed(2)}%</td>
                     <td>--</td>
                 `;
-                
                 tableBody.appendChild(row);
             });
         })
