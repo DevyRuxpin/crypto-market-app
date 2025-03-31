@@ -1,8 +1,9 @@
-from app import app, db
-from models.user import User
-from models.portfolio import Portfolio, PortfolioItem
-from models.alert import Alert
-from models.watchlist import Watchlist, WatchlistSymbol
+from app import app
+from .database import db  # Updated to use relative import
+from .models.user import User
+from .models.portfolio import Portfolio, PortfolioItem
+from .models.alert import Alert
+from .models.watchlist import Watchlist, WatchlistSymbol
 from werkzeug.security import generate_password_hash
 import uuid
 from datetime import datetime

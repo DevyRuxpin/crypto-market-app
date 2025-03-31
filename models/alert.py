@@ -1,4 +1,4 @@
-from database import db  # Import db from __init__.py
+from ..database import db  # Updated to use relative import
 from datetime import datetime
 import uuid
 

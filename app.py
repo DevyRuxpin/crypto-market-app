@@ -9,8 +9,8 @@ import logging
 import pyotp
 
 # Import database and models
-from database import db
-from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert
+from .database import db  # Updated to use relative import
+from .models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert  # Updated to use relative imports
 
 # Import services
 from services.websocket_service import websocket_service
@@ -20,7 +20,8 @@ from services.api_service import BinanceService, CoinMarketCapService
 from forms import LoginForm, SignupForm, TwoFactorForm
 
 # Import routes
-from routes.api import api_bp
+from .routes.api import api_bp
+from .routes.auth import auth_bp
 
 # Configure logging
 logging.basicConfig(
@@ -36,18 +37,8 @@ logger = logging.getLogger(__name__)
 
 def create_app(test_config=None):
     # Create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
-    
-    # Load default configuration
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev_key_for_development_only'),
-        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///cryptotracker.db'),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SESSION_COOKIE_SECURE=os.environ.get('FLASK_ENV') == 'production',
-        SESSION_COOKIE_HTTPONLY=True,
-        REMEMBER_COOKIE_SECURE=os.environ.get('FLASK_ENV') == 'production',
-        REMEMBER_COOKIE_HTTPONLY=True
-    )
+    app = Flask(__name__)
+    app.config.from_object('config.config[os.getenv("FLASK_ENV", "default")]')
     
     # Load test config if passed
     if test_config:
@@ -59,16 +50,12 @@ def create_app(test_config=None):
     except OSError:
         pass
     
-    # Initialize database
+    # Initialize extensions
     db.init_app(app)
-    
-    # Initialize migrations
-    migrate = Migrate(app, db)
-    
-    # Initialize login manager
     login_manager = LoginManager()
     login_manager.login_view = 'login'
     login_manager.init_app(app)
+    migrate = Migrate(app, db)
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -325,4 +312,4 @@ def create_app(test_config=None):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=os.environ.get('FLASK_ENV') == 'development')
+    app.run()

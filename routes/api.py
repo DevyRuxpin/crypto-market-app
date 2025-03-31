@@ -1,8 +1,8 @@
 # routes/api.py
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
-from models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
-from database import db
+from ..models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol  # Updated to use relative imports
+from ..database import db  # Updated to use relative import
 from services.api_service import BinanceService, CoinMarketCapService, TechnicalAnalysisService, NewsService
 import uuid
 from datetime import datetime

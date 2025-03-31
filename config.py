@@ -34,7 +34,7 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///prod_cryptotracker.db')  # Added fallback
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 
