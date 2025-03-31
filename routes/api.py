@@ -1,4 +1,8 @@
 # routes/api.py
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from flask import Blueprint, jsonify, request, abort
 from flask_login import current_user, login_required
 from models import User, Portfolio, PortfolioItem, Alert, Watchlist, WatchlistSymbol
