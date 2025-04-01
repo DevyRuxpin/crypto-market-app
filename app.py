@@ -15,11 +15,6 @@ import os
 app = Flask(__name__)
 app.config.from_object(Config)
 
-db = SQLAlchemy(app)
-
-login_manager = LoginManager(app)
-login_manager.login_view = 'auth.login'
-
 from routes.main import main as main_blueprint
 from routes.auth import auth as auth_blueprint
 from routes.api import api as api_blueprint
@@ -27,6 +22,11 @@ from routes.api import api as api_blueprint
 app.register_blueprint(main_blueprint)
 app.register_blueprint(auth_blueprint, url_prefix='/auth')
 app.register_blueprint(api_blueprint, url_prefix='/api')
+
+db = SQLAlchemy(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'auth.login'
 
 @login_manager.user_loader
 def load_user(user_id):
