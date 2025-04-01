@@ -45,10 +45,6 @@ services:
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: BINANCE_API_BASE_URL
-        value: https://data-api.binance.vision
-      - key: BINANCE_WS_BASE_URL
-        value: wss://data-stream.binance.vision
       - key: COINMARKETCAP_API_KEY
         value: bda79d78-5f5c-41c3-892e-3584b698e234
       - key: COINMARKETCAP_API_URL
