@@ -1,56 +1,35 @@
-from .binance_api import BinanceAPI  # Import BinanceAPI
+import requests
+from flask import current_app
 
 class BinanceService:
-    @staticmethod
-    def get_ticker_prices():
-        """
-        Fetches the latest ticker prices from Binance API.
-        """
-        try:
-            return BinanceAPI.get_price()  # Use BinanceAPI's get_price method
-        except Exception as e:
-            print(f"Error fetching ticker prices: {e}")
-            return None
+    def __init__(self):
+        self.base_url = 'https://data-api.binance.vision/api/v3'
+        self.api_key = current_app.config['BINANCE_API_KEY']
+        self.secret_key = current_app.config['BINANCE_SECRET_KEY']
 
-    @staticmethod
-    def get_crypto_prices():
-        """
-        Fetches a dictionary of crypto prices.
-        """
-        try:
-            prices = BinanceAPI.get_price()
-            return {item['symbol']: float(item['price']) for item in prices}
-        except Exception as e:
-            print(f"Error fetching crypto prices: {e}")
-            return None
+    def get_ticker_data(self, symbol):
+        url = f'{self.base_url}/ticker/24hr'
+        params = {
+            'symbol': symbol
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
 
-    @staticmethod
-    def get_crypto_details(crypto_symbol):
-        """
-        Fetches details for a specific cryptocurrency.
-        """
-        try:
-            price_data = BinanceAPI.get_price(crypto_symbol)
-            return {"symbol": crypto_symbol, "price": float(price_data['price'])}
-        except Exception as e:
-            print(f"Error fetching crypto details: {e}")
-            return None
+    def get_kline_data(self, symbol, interval):
+        url = f'{self.base_url}/klines'
+        params = {
+            'symbol': symbol,
+            'interval': interval
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
 
-    @staticmethod
-    def get_top_cryptos():
-        """
-        Fetches a list of top cryptocurrencies by market cap.
-        """
-        # Placeholder implementation; replace with actual logic if needed
-        return ["BTC", "ETH", "BNB"]
+    def subscribe_to_symbol(self, symbol, client_id):
+        # Implement WebSocket subscription logic here
+        pass
 
-    @staticmethod
-    def get_ticker_24hr():
-        """
-        Fetches 24-hour ticker price change statistics for all symbols.
-        """
-        try:
-            return BinanceAPI.get_24hr_ticker()
-        except Exception as e:
-            print(f"Error fetching 24hr ticker data: {e}")
-            return None
+    def unsubscribe_from_symbol(self, symbol, client_id):
+        # Implement WebSocket unsubscription logic here
+        pass

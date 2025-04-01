@@ -1,167 +1,74 @@
-{% extends "base.html" %}
-
-{% block title %}{{ symbol }} Details{% endblock %}
-
-{% block head_extra %}
-<style>
-    .price-up {
-        color: #28a745;
-    }
-    .price-down {
-        color: #dc3545;
-    }
-    .chart-container {
-        position: relative;
-        height: 400px;
-        width: 100%;
-    }
-    .market-depth-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-    .data-card {
-        height: 100%;
-    }
-</style>
-{% endblock %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 id="symbol-title">{{ symbol }}</h1>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-        </a>
+<h1>{{ coin_data.name }} ({{ coin_data.symbol }})</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Market Data</h2>
+        <table class="table">
+            <tr>
+                <th>Price</th>
+                <td>${{ coin_data.quote.USD.price|round(2) }}</td>
+            </tr>
+            <tr>
+                <th>Market Cap</th>
+                <td>${{ coin_data.quote.USD.market_cap|round(2) }}</td>
+            </tr>
+            <tr>
+                <th>24h Change</th>
+                <td {% if coin_data.quote.USD.percent_change_24h >= 0 %}class="text-success"{% else %}class="text-danger"{% endif %}>
+                    {{ coin_data.quote.USD.percent_change_24h|round(2) }}%
+                </td>
+            </tr>
+        </table>
     </div>
-    
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card data-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Current Price</h5>
-                </div>
-                <div class="card-body">
-                    <h2 id="current-price">Loading...</h2>
-                    <p id="price-change" class="mb-0">24h Change: <span>--</span></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card data-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">24h Statistics</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <p>High: <span id="24h-high">--</span></p>
-                            <p>Low: <span id="24h-low">--</span></p>
-                        </div>
-                        <div class="col-6">
-                            <p>Volume: <span id="24h-volume">--</span></p>
-                            <p>Trades: <span id="24h-trades">--</span></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card data-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Market Info</h5>
-                </div>
-                <div class="card-body">
-                    <p>Base Asset: <span id="base-asset">--</span></p>
-                    <p>Quote Asset: <span id="quote-asset">--</span></p>
-                    <p>Status: <span id="status">--</span></p>
-                </div>
-            </div>
-        </div>
+    <div class="col-md-6">
+        <h2>Ticker Data</h2>
+        <table class="table">
+            <tr>
+                <th>Price</th>
+                <td id="ticker-price">${{ ticker_data.lastPrice }}</td>
+            </tr>
+            <tr>
+                <th>24h Change</th>
+                <td id="ticker-change" {% if ticker_data.priceChangePercent >= 0 %}class="text-success"{% else %}class="text-danger"{% endif %}>
+                    {{ ticker_data.priceChangePercent }}%
+                </td>
+            </tr>
+            <tr>
+                <th>24h High</th>
+                <td>${{ ticker_data.highPrice }}</td>
+            </tr>
+            <tr>
+                <th>24h Low</th>
+                <td>${{ ticker_data.lowPrice }}</td>
+            </tr>
+        </table>
     </div>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Price Chart</h5>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="1m">1m</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="5m">5m</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="15m">15m</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="1h">1h</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="4h">4h</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn active" data-interval="1d">1d</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary interval-btn" data-interval="1w">1w</button>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="chart-container">
-                <canvas id="priceChart"></canvas>
-            </div>
-            <div id="chart-loading" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading chart data...</p>
-            </div>
-            <div id="chart-error" class="alert alert-danger d-none" role="alert">
-                Error loading chart data. Please try again later.
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Technical Indicators</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Moving Averages</h6>
-                            <p>SMA 20: <span id="sma-20">--</span></p>
-                            <p>SMA 50: <span id="sma-50">--</span></p>
-                            <p>EMA 12: <span id="ema-12">--</span></p>
-                            <p>EMA 26: <span id="ema-26">--</span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Oscillators</h6>
-                            <p>RSI (14): <span id="rsi-value">--</span></p>
-                            <div class="progress mb-2" style="height: 20px;">
-                                <div id="rsi-progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Market Depth</h5>
-                </div>
-                <div class="card-body">
-                    <div class="market-depth-container">
-                        <canvas id="depthChart"></canvas>
-                    </div>
-                    <div id="depth-loading" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading market depth data...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Charts</h2>
+        {# Add chart code here #}
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const symbol = "{{ symbol }}";
+    var socket = io();
+
+    socket.on('connect', function() {
+        socket.emit('subscribe', { symbol: '{{ coin_data.symbol }}' });
+    });
+
+    socket.on('ticker', function(data) {
+        $('#ticker-price').text('$' + data.price.toFixed(2));
+        $('#ticker-change').text(data.change + '%');
+        $('#ticker-change').toggleClass('text-success', data.change >= 0);
+        $('#ticker-change').toggleClass('text-danger', data.change < 0);
+    });
 </script>
-<script src="{{ url_for('static', filename='js/crypto_detail.js') }}"></script>
 {% endblock %}

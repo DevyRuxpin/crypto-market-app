@@ -1,244 +1,119 @@
-<!-- templates/dashboard.html -->
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - Crypto Tracker{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col text-center">
-            <h1 class="display-4">Cryptocurrency Dashboard</h1>
-            <p class="lead">Track real-time prices, market trends, and manage your crypto assets.</p>
-        </div>
-    </div>
+<h1>Dashboard</h1>
 
-    <!-- Market Overview -->
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <h6 class="text-muted">Total Market Cap</h6>
-                    <h3 class="text-primary" id="market-cap">$1.2T</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <h6 class="text-muted">24h Volume</h6>
-                    <h3 class="text-primary" id="total-volume">$78.5B</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <h6 class="text-muted">BTC Dominance</h6>
-                    <h3 class="text-primary" id="btc-dominance">42.7%</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <h6 class="text-muted">Active Cryptocurrencies</h6>
-                    <h3 class="text-primary" id="active-cryptos">10,482</h3>
-                </div>
-            </div>
-        </div>
-    </div>
+<h2>Market Overview</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cryptocurrency</th>
+            <th>Price</th>
+            <th>Market Cap</th>
+            <th>24h Change</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for coin in market_data.data %}
+        <tr>
+            <td><a href="{{ url_for('main.crypto_detail', symbol=coin.symbol) }}">{{ coin.name }} ({{ coin.symbol }})</a></td>
+            <td>${{ coin.quote.USD.price|round(2) }}</td>
+            <td>${{ coin.quote.USD.market_cap|round(2) }}</td>
+            <td {% if coin.quote.USD.percent_change_24h >= 0 %}class="text-success"{% else %}class="text-danger"{% endif %}>
+                {{ coin.quote.USD.percent_change_24h|round(2) }}%
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <!-- Filters and Controls -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="input-group mb-3">
-                <span class="input-group-text">Filter</span>
-                <select id="filterSelect" class="form-select">
-                    <option value="all">All Pairs</option>
-                    <option value="usdt">USDT Pairs</option>
-                    <option value="btc">BTC Pairs</option>
-                    <option value="gainers">Top Gainers</option>
-                    <option value="losers">Top Losers</option>
-                </select>
-            </div>
-        </div>
-        <div class="col-md-6 text-end">
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-outline-primary" id="refresh-prices">
-                    <i class="fas fa-sync-alt me-1"></i>Refresh
-                </button>
-                {% if current_user.is_authenticated %}
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#add-to-watchlist-modal">
-                    <i class="fas fa-star me-1"></i>Add to Watchlist
-                </button>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+<h2>Watchlist</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>24h Change</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for symbol in watchlist_symbols %}
+        <tr>
+            <td><a href="{{ url_for('main.crypto_detail', symbol=symbol) }}">{{ symbol }}</a></td>
+            <td id="{{ symbol }}-price"></td>
+            <td id="{{ symbol }}-change"></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <!-- Cryptocurrency List -->
-    <div class="row mt-4">
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Cryptocurrency Prices</h5>
-                </div>
-                <div class="card-body">
-                    <div id="loading-indicator" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading cryptocurrency data...</p>
-                    </div>
-                    
-                    <div id="error-message" class="alert alert-danger" style="display: none;">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Error loading cryptocurrency data. Please try again later.
-                    </div>
-                    
-                    <div id="crypto-list" class="row">
-                        <!-- Cryptocurrency cards will be dynamically inserted here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<h2>Portfolio</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Quantity</th>
+            <th>Average Price</th>
+            <th>Current Value</th>
+            <th>Gain/Loss</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in portfolio_items %}
+        <tr>
+            <td><a href="{{ url_for('main.crypto_detail', symbol=item.symbol) }}">{{ item.symbol }}</a></td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.avg_price|round(2) }}</td>
+            <td id="{{ item.symbol }}-value"></td>
+            <td id="{{ item.symbol }}-gain-loss"></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <!-- Recent News -->
-    <div class="row mt-4">
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-newspaper me-2"></i>Recent News
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div id="news-loading" class="text-center py-3">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading news...</p>
-                    </div>
-                    
-                    <div id="news-error" class="alert alert-danger" style="display: none;">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Error loading news. Please try again later.
-                    </div>
-                    
-                    <div id="news-list" class="row">
-                        <!-- News items will be inserted here by JavaScript -->
-                    </div>
-                    
-                    <div class="text-center mt-3">
-                        <a href="{{ url_for('news') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-newspaper me-1"></i>View All News
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {% if current_user.is_authenticated %}
-    <!-- Add to Watchlist Modal -->
-    <div class="modal fade" id="add-to-watchlist-modal" tabindex="-1" aria-labelledby="addToWatchlistModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addToWatchlistModalLabel">Add to Watchlist</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="add-to-watchlist-form">
-                        <div class="mb-3">
-                            <label for="watchlist-select-add" class="form-label">Select Watchlist</label>
-                            <select id="watchlist-select-add" class="form-select" required>
-                                <option value="">Select a watchlist</option>
-                                <!-- Watchlist options will be inserted here by JavaScript -->
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="watchlist-symbol" class="form-label">Symbol</label>
-                            <input type="text" class="form-control" id="watchlist-symbol" placeholder="e.g., BTCUSDT" required>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Add to Watchlist</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
+<h2>Alerts</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Price Threshold</th>
+            <th>Direction</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for alert in alerts %}
+        <tr>
+            <td><a href="{{ url_for('main.crypto_detail', symbol=alert.symbol) }}">{{ alert.symbol }}</a></td>
+            <td>${{ alert.price_threshold|round(2) }}</td>
+            <td>{% if alert.is_above %}Above{% else %}Below{% endif %}</td>
+            <td>{% if alert.is_active %}Active{% else %}Inactive{% endif %}</td>
+            <td>
+                <a href="{{ url_for('main.toggle_alert', alert_id=alert.id) }}" class="btn btn-{% if alert.is_active %}danger{% else %}success{% endif %} btn-sm">
+                    {% if alert.is_active %}Deactivate{% else %}Activate{% endif %}
+                </a>
+                <a href="{{ url_for('main.delete_alert', alert_id=alert.id) }}" class="btn btn-danger btn-sm">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load watchlists for the modal if user is logged in
-        {% if current_user.is_authenticated %}
-        fetch('/api/watchlists')
-            .then(response => response.json())
-            .then(data => {
-                const watchlistSelect = document.getElementById('watchlist-select-add');
-                watchlistSelect.innerHTML = '<option value="">Select a watchlist</option>';
-                
-                data.forEach(watchlist => {
-                    const option = document.createElement('option');
-                    option.value = watchlist.id;
-                    option.textContent = watchlist.name;
-                    watchlistSelect.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error loading watchlists:', error));
-        {% endif %}
-        
-        // Load news for the dashboard
-        fetch('/api/news?limit=3')
-            .then(response => response.json())
-            .then(data => {
-                const newsList = document.getElementById('news-list');
-                document.getElementById('news-loading').style.display = 'none';
-                
-                if (data.length === 0) {
-                    newsList.innerHTML = '<div class="col-12"><div class="alert alert-info">No news available at the moment.</div></div>';
-                    return;
-                }
-                
-                newsList.innerHTML = '';
-                data.forEach(article => {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-4 mb-3';
-                    
-                    col.innerHTML = `
-                        <div class="card h-100">
-                            <img src="${article.imageurl}" class="card-img-top" alt="${article.title}" onerror="this.src='/static/img/news-placeholder.jpg'">
-                            <div class="card-body">
-                                <h5 class="card-title">${article.title}</h5>
-                                <p class="card-text">${article.body.substring(0, 100)}...</p>
-                            </div>
-                            <div class="card-footer">
-                                <small class="text-muted">${new Date(article.published_on * 1000).toLocaleString()}</small>
-                                <a href="${article.url}" class="btn btn-sm btn-outline-primary float-end" target="_blank">Read More</a>
-                            </div>
-                        </div>
-                    `;
-                    
-                    newsList.appendChild(col);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading news:', error);
-                document.getElementById('news-loading').style.display = 'none';
-                document.getElementById('news-error').style.display = 'block';
-            });
-            
-        // Refresh button handler
-        document.getElementById('refresh-prices').addEventListener('click', function() {
-            CryptoApp.loadCryptoPrices();
-        });
+    var socket = io();
+
+    socket.on('connect', function() {
+        {% for symbol in watchlist_symbols %}
+        socket.emit('subscribe', { symbol: '{{ symbol }}' });
+        {% endfor %}
+    });
+
+    socket.on('ticker', function(data) {
+        $('#' + data.symbol + '-price').text('$' + data.price.toFixed(2));
+        $('#' + data.symbol + '-change').text(data.change + '%');
     });
 </script>
 {% endblock %}
