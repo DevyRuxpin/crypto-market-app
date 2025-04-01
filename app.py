@@ -16,7 +16,7 @@ load_dotenv()
 # Use absolute imports
 from database import db
 from models import User, Portfolio, PortfolioItem, Watchlist, WatchlistSymbol, Alert
-from routes.api import api_bp
+from routes.api import api_bp, limiter  # Import limiter
 from routes.auth import auth_bp
 from routes.main import main_bp
 from services.websocket_service import websocket_service
@@ -39,6 +39,9 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
+
+# Attach Limiter to app
+limiter.init_app(app)
 
 # Configure the database URI
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(

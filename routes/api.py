@@ -18,7 +18,7 @@ from flask_limiter.util import get_remote_address
 api_bp = Blueprint('api', __name__)
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(get_remote_address, app=app, default_limits=["60 per minute"])
+limiter = Limiter(get_remote_address, default_limits=["60 per minute"])  # Remove app argument
 
 @api_bp.route('/prices', methods=['GET'])
 @limiter.limit("10 per minute")
