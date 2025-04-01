@@ -2,7 +2,7 @@ services:
   - type: web
     name: crypto-market-app
     env: python
-    runtime: python3
+    runtime: python3.11
     buildCommand: ./build.sh
     startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app
     healthCheckPath: /health
@@ -24,12 +24,24 @@ services:
         sync: false
       - key: COINMARKETCAP_API_KEY
         sync: false
+      - key: MAIL_SERVER
+        value: smtp.sendgrid.net
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: true
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        value: noreply@cryptomarket.example.com
 
   # Worker for background tasks (optional - if you need background processing)
   - type: worker
     name: crypto-market-worker
     env: python
-    runtime: python3
+    runtime: python3.11
     buildCommand: pip install -r requirements.txt
     startCommand: PYTHONPATH=. python worker.py
     envVars:
@@ -61,7 +73,7 @@ services:
       - key: MAIL_USE_TLS
         value: true
       - key: MAIL_USERNAME
-        value: apikey
+        sync: false
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_DEFAULT_SENDER

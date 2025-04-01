@@ -9,7 +9,7 @@ def init_email(app):
 def send_password_reset_email(user):
     token = user.get_reset_password_token()
     msg = Message('Password Reset Request',
-                  sender=current_app.config['MAIL_USERNAME'],
+                  sender=current_app.config['MAIL_DEFAULT_SENDER'],
                   recipients=[user.email])
     msg.body = f'''To reset your password, visit the following link:
 {url_for('auth.reset_password', token=token, _external=True)}
